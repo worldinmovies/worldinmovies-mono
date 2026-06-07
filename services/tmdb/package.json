@@ -1,0 +1,10 @@
+{
+  "name": "@worldinmovies/tmdb",
+  "private": true,
+  "scripts": {
+    "test": "python manage.py behave",
+    "test:unit": "python manage.py test",
+    "lint": "ruff check .",
+    "dev": "hypercorn --config=gunicorn.config.py --reload settings.asgi:application"
+  }
+}

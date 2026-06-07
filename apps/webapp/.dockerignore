@@ -1,0 +1,10 @@
+.idea/
+build/
+coverage/
+dist/
+node_modules/
+*.iml
+.trunk/
+
+android/
+ios/

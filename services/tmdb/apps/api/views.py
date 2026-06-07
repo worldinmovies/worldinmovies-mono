@@ -1,0 +1,350 @@
+import csv
+import datetime
+import json
+import threading
+import random
+import time
+
+from apps.letterboxd import letterboxd
+from apps.worker.celery_tasks import redo_countries, index_movies
+from apps.app.helper import chunks, convert_country_code, start_background_process
+from apps.imdb.imdb_importer import import_imdb_ratings, import_imdb_alt_titles
+from apps.tmdb.tmdb_importer import download_files, fetch_tmdb_data_concurrently, import_genres, import_countries, \
+    import_languages, \
+    base_import, check_which_movies_needs_update, import_providers, populate_discovery_movies
+from apps.app.db_models import Movie, Genre, SpokenLanguage, ProductionCountries, DiscoveryMovie
+from apps.imdb import imdb_importer
+from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+from apps.app.meilisearch_client import client
+
+
+def import_status(request):
+    result = Movie.objects().aggregate([
+        {
+            '$group': {
+                '_id': None,
+                'Total': {
+                    '$sum': 1
+                },
+                'Fetched': {
+                    '$sum': {
+                        '$cond': {
+                            'if': '$fetched', 'then': 1, 'else': 0
+                        }
+                    }
+                }
+            }
+        }, {
+            '$project': {
+                '_id': 0,
+                'Total': 1,
+                'Fetched': 1,
+                'Percentage': {
+                    '$multiply': [
+                        {'$divide': ['$Fetched', '$Total']},
+                        100
+                    ]
+                }
+            }
+        }
+    ])
+    for row in result:
+        return HttpResponse(json.dumps({"total": row['Total'],
+                                        "fetched": row['Fetched'],
+                                        "percentageDone": row['Percentage']}),
+                            content_type='application/json')
+    return HttpResponse(json.dumps({"total": 0, "fetched": 0, "percentageDone": 0}))
+
+
+@csrf_exempt
+def get_best_movies_from_country(request, country_code):
+    skip = int(request.GET.get('skip', 0))
+    limit = int(request.GET.get('limit', 20))
+    country_codes = convert_country_code(country_code)
+    data = get_movies_from_country_codes(country_codes, limit, skip)
+    return HttpResponse(data.to_json(), content_type='application/json')
+
+
+def get_genres(request):
+    return HttpResponse(json.dumps(Genre.objects.distinct('name')), content_type='application/json')
+
+# Get the best movie from each country until you've gone through all countries,
+# then reset the country-list, go through everything again but get the next best film, and so on...
+def get_best_randoms(request, movies=0):
+    limit = int(request.GET.get('limit', 4))
+    seed = int(request.GET.get('seed', int(time.time() * 1000)))
+
+    # Get genre filter from request (can be comma-separated list)
+    genre_filter = request.GET.get('genres', None)
+    genre_list = None
+
+    if genre_filter:
+        # Split and strip whitespace
+        genre_list = [g.strip() for g in genre_filter.split(',') if g.strip()]
+
+    # Get distinct countries with genre filter applied
+    # Use MongoEngine query syntax, not raw MongoDB
+    query = DiscoveryMovie.objects(estimated_country__ne=None)
+    if genre_list:
+        query = query(genres__in=genre_list)
+
+    countries = query.distinct('estimated_country')
+
+    if not countries:
+        return HttpResponse(json.dumps({"seed": seed, "results": []}), content_type='application/json')
+
+    no_of_countries = len(countries)
+    
+    # trunk-ignore(bandit/B311)
+    rng = random.Random(seed)
+    rng.shuffle(countries)
+
+    countries_skip = int(movies) % no_of_countries
+    movie_skip = int(movies) // no_of_countries
+
+    # Build wrap-around selection of `limit` countries starting at countries_skip
+    selected_countries = [
+        countries[(countries_skip + i) % no_of_countries]
+        for i in range(limit)
+    ]
+
+    # Build pipeline match query
+    pipeline_match = {"estimated_country": {"$in": selected_countries}}
+    if genre_list:
+        pipeline_match["genres"] = {"$in": genre_list}
+
+    pipeline = [
+        {"$match": pipeline_match},
+        {"$group": {
+            "_id": "$estimated_country",
+            "topMovies": {
+                "$topN": {
+                    "sortBy": {"weighted_rating": -1},
+                    "output": "$$ROOT",
+                    "n": movie_skip + 1
+                }
+            }
+        }},
+        {"$sort": {"_id": 1}},
+        {"$limit": limit},
+        {"$project": {"movie": {"$arrayElemAt": ["$topMovies", movie_skip]}}},
+        {"$replaceRoot": {"newRoot": "$movie"}}
+    ]
+    
+    results = list(DiscoveryMovie.objects.aggregate(pipeline))
+
+    return HttpResponse(json.dumps(results), content_type='application/json')
+
+
+
+def get_movies_from_country_codes(country_codes, limit, skip):
+    return DiscoveryMovie.objects.filter(
+        estimated_country__in=country_codes
+    ).order_by('-weighted_rating').skip(skip).limit(limit)
+
+
+def get_random_movies_by_country(country_code, count=10):
+    """
+    Get random movies from a specific country.
+    Useful for "discover" features.
+    
+    Args:
+        country_code: ISO country code
+        count: Number of random movies to return
+    
+    Returns:
+        List of DiscoveryMovie documents
+    """
+    pipeline = [
+        {"$match": {"estimated_country": country_code}},
+        {"$sample": {"size": count}}
+    ]
+    
+    return list(DiscoveryMovie.objects.aggregate(pipeline))
+
+
+# Imports
+
+def download_file(request):
+    return HttpResponse(start_background_process(download_files, 'download_files', 'TMDB downloads'))
+
+
+def base_fetch(request):
+    return HttpResponse(start_background_process(base_import, 'base_import', 'TMDB base'))
+
+
+def import_tmdb_data(request):
+    return HttpResponse(start_background_process(fetch_tmdb_data_concurrently, 'import_tmdb_data', 'TMDB data'))
+
+
+def fetch_genres(request):
+    return HttpResponse(start_background_process(import_genres, 'import_genres', 'TMDB genres'))
+
+
+def fetch_countries(request):
+    return HttpResponse(start_background_process(import_countries, 'import_countries', 'TMDB countries'))
+
+
+def fetch_languages(request):
+    return HttpResponse(start_background_process(import_languages, 'import_languages', 'TMDB languages'))
+
+
+def fetch_providers(request):
+    return HttpResponse(start_background_process(import_providers, 'import_providers', 'TMDB Providers'))
+
+
+def check_tmdb_for_changes(request):
+    start_date = request.GET.get('start_date',
+                                 (datetime.date.today() - datetime.timedelta(days=1)).strftime("%Y-%m-%d"))
+    end_date = request.GET.get('end_date', datetime.date.today().strftime("%Y-%m-%d"))
+    if 'check_which_movies_needs_update' not in [thread.name for thread in threading.enumerate()]:
+        thread = threading.Thread(target=check_which_movies_needs_update,
+                                  args=[start_date, end_date],
+                                  name='check_which_movies_needs_update')
+        thread.daemon = True
+        thread.start()
+        return HttpResponse(json.dumps({"Message": "Starting to process TMDB changes"}))
+    else:
+        return HttpResponse(json.dumps({"Message": "TMDB changes process already started"}))
+
+
+def fetch_movies_data(request, ids):
+    data_list = Movie.objects(pk__in=map(lambda x: int(x), ids.split(','))).exclude(
+        'fetched',
+        'fetched_date',
+        'data').to_json()
+    return HttpResponse(list(data_list), content_type='application/json')
+
+def fetch_movie_data(request, id):
+    try:
+        data = Movie.objects.get(id=id).to_json()
+    except Movie.DoesNotExist:
+        data = None
+    return HttpResponse(data, content_type='application/json')
+
+
+def dump_genres(request):
+    return HttpResponse(Genre.objects.all().to_json(), content_type='application/json')
+
+
+def dump_langs(request):
+    return HttpResponse(SpokenLanguage.objects.all().to_json(), content_type='application/json')
+
+
+def dump_countries(request):
+    return HttpResponse(ProductionCountries.objects.all().to_json(), content_type='application/json')
+
+
+def redo_guestimation(request):
+    def work():
+        for chunk in chunks(Movie.objects().all().values_list('id'), 50):
+            redo_countries.delay(list(chunk))
+
+    return HttpResponse(start_background_process(work, 'guestimate_countries', 'Redoing Guestimation Of Countries'))
+
+
+def populate_discovery(request):
+    def work():
+        populate_discovery_movies()
+
+    return HttpResponse(start_background_process(work, 'discovery_index', 'Indexing Discovery Movie Collection'))
+
+
+def index_meilisearch(request):
+    def work():
+        index = client.index("movies")
+        index.delete_all_documents()
+        index.update_settings({
+            "searchableAttributes": [
+                "title",
+                "original_title",
+                "alternative_titles",
+                "directors"
+            ],
+            "filterableAttributes": [
+                "guessed_country",
+                "original_language"
+            ],
+            "sortableAttributes": [
+                "weighted_rating",
+                "vote_average",
+                "vote_count"
+            ],
+            "displayedAttributes": [
+                "id",
+                "title",
+                "original_title",
+                "overview",
+                "directors",
+                "weighted_rating",
+                "vote_average",
+                "vote_count",
+                "guessed_country",
+                "original_language",
+                "poster",
+                "year"
+            ]
+        })
+        for chunk in chunks(Movie.objects().all().values_list('id'), 50):
+            index_movies.delay(list(chunk))
+
+    return HttpResponse(start_background_process(work, 'discovery_index', 'Indexing Discovery Movie Collection'))
+
+
+def search_movies(request, query):
+    index = client.index("movies")
+    return HttpResponse(json.dumps(index.search(query)), content_type='application/json')
+
+
+# IMDB
+
+# Imports
+def fetch_imdb_ratings(request):
+    return HttpResponse(start_background_process(import_imdb_ratings, 'import_imdb_ratings', 'IMDB ratings'))
+
+
+def fetch_imdb_titles(request):
+    return HttpResponse(start_background_process(import_imdb_alt_titles, 'import_imdb_titles', 'IMDB titles'))
+
+@csrf_exempt
+def parse_user_imdb_ratings(request):
+    """This should map incoming imdb ratings file, and try to match it with our dataset,
+        and return it in a format we can use in frontend
+
+        curl 'http://localhost:8000/imdb/ratings' -X POST -H
+        'Content-Type: multipart/form-data' -F file=@testdata/ratings.csv
+    """
+    if request.method == 'POST':
+        if 'file' in request.FILES:
+            file = request.FILES['file']
+            result = imdb_importer.parse_user_watched(file)
+            return HttpResponse(json.dumps(result), content_type='application/json')
+
+    return HttpResponse("Method: %s, not allowed" % request.method, status=400)
+
+
+@csrf_exempt
+def parse_user_letterboxd_ratings(request):
+    """This should map incoming letterboxd ratings file, and try to match it with our dataset,
+        and return it in a format we can use in frontend
+
+        curl 'http://localhost:8020/letterboxd/ratings' -X POST -H \
+            'Content-Type: multipart/form-data' -F file=@testdata/letterboxd-watched.csv
+    """
+    #index = client.index("movies")
+    #index.update_settings({
+    #        "filterableAttributes": [
+    #            "guessed_country",
+    #            "original_language",
+    #            "year"
+    #        ]
+    #    })
+
+    if request.method == 'POST':
+        if 'file' in request.FILES:
+            file = request.FILES['file']
+            result = letterboxd.parse_user_watched(file)
+            return HttpResponse(json.dumps(result), content_type='application/json')
+
+    return HttpResponse("Method: %s, not allowed" % request.method, status=400)

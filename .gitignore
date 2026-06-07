@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+
+# Python
+venv/
+__pycache__/
+*.pyc
+db.sqlite3
+*.gz
+
+# Testing
+coverage/
+test-results/
+playwright-report/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+
+# Environment
+.env
+.env.local
+
+# Trunk
+.trunk/
+
+# TypeScript
+*.tsbuildinfo

@@ -1,0 +1,7 @@
+$ python manage.py behave
+Traceback (most recent call last):
+  File "/Users/daveri/workspace/personal/worldinmovies/worldinmovies-mono/services/tmdb/manage.py", line 7, in <module>
+    from testcontainers.mongodb import MongoDbContainer
+ModuleNotFoundError: No module named 'testcontainers'
+[ELIFECYCLE] Test failed. See above for more details.
+[WARN]  Local package.json exists, but node_modules missing, did you mean to install?
