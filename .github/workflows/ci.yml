@@ -1,0 +1,158 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  backend-test:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/tmdb
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.12
+        cache: 'pip'
+        cache-dependency-path: services/tmdb/requirements.txt
+    - name: Install prerequisites
+      uses: tecolicom/actions-use-apt-tools@v1
+      with:
+        tools: 'libsnappy-dev gcc python3-dev libkrb5-dev'
+        cache: 'yes'
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    - name: Run Tests
+      run: python manage.py behave
+
+  build-tmdb:
+    name: Build TMDB Docker image
+    runs-on: ubuntu-latest
+    needs: [backend-test]
+    strategy:
+      fail-fast: true
+      matrix:
+        platform:
+          - linux/amd64
+          - linux/arm64
+    steps:
+      - name: Prepare
+        run: |
+          platform=${{ matrix.platform }}
+          echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV
+      - uses: actions/checkout@v4
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: seppaleinen/worldinmovies_tmdb
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: services/tmdb
+          platforms: ${{ matrix.platform }}
+          labels: ${{ steps.meta.outputs.labels }}
+          outputs: type=image,name=seppaleinen/worldinmovies_tmdb,push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=registry,ref=seppaleinen/worldinmovies_tmdb:latest
+          cache-to: type=inline
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
+      - name: Upload digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ env.PLATFORM_PAIR }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge-tmdb-manifest:
+    name: Merge multi-arch manifest
+    runs-on: ubuntu-latest
+    needs: [build-tmdb]
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: digests-*
+          merge-multiple: true
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: seppaleinen/worldinmovies_tmdb
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD}}
+      - name: Create manifest list and push
+        working-directory: /tmp/digests
+        run: |
+          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf 'seppaleinen/worldinmovies_tmdb@sha256:%s ' *)
+
+  integration-test:
+    name: Integration tests
+    runs-on: ubuntu-latest
+    needs: [backend-test]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 11
+    - name: Use Node.js 22.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22.x
+        cache: 'pnpm'
+    - name: Install dependencies (e2e only)
+      run: pnpm install --frozen-lockfile --filter @worldinmovies/e2e
+    - name: Start containers and run integration tests
+      working-directory: tests/e2e
+      run: |
+        echo "VITE_WEBAPP_PORT=80" > .env
+        echo "DJANGO_SECRET_KEY="$(uuidgen) >> .env
+        docker compose up -d || docker compose up -d
+        docker cp datasubset/tmdb.movie.json mongo:/
+        docker cp datasubset/tmdb.flattened_movie.json mongo:/
+        ./wait_until_running.sh
+        docker exec mongo mongoimport -u seppa -p password -d tmdb -c movie --mode upsert --jsonArray --type json --file tmdb.movie.json
+        docker exec mongo mongoimport -u seppa -p password -d tmdb -c movie --mode upsert --jsonArray --type json --file tmdb.flattened_movie.json
+        pnpm run cypress:test
+    - name: Check errors
+      if: ${{ failure() }}
+      working-directory: tests/e2e
+      run: |
+        docker compose logs; docker ps -a
+    - name: Stop containers
+      if: ${{ always() }}
+      working-directory: tests/e2e
+      run: docker compose down

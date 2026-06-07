@@ -1,0 +1,235 @@
+import { useState, useEffect, useCallback } from "react";
+import { toast } from "sonner";
+import { Movie, BackendMovie, DiscoverMovie } from "@/lib/models";
+import { BACKEND_URL } from "@/lib/config";
+import * as Sentry from "@sentry/react";
+
+const regionNames = new Intl.DisplayNames(['en'], {type: 'region'});
+
+// Mock data for top international films
+const MOVIE_DATABASE: Movie[] = [
+  // ... (keep existing mock data)
+];
+
+export const useMovies = (selectedCountry?: string | null) => {
+  const [movies, setMovies] = useState<Movie[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+
+  const shuffleArray = (array: Movie[]) => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
+  // Add reset function
+  const resetMovies = useCallback(() => {
+    setMovies([]);
+    setHasMore(true);
+  }, []);
+
+  const loadMoreMovies = useCallback(
+    async (seed: number, countryCode?: string, skipOverride?: number, genres?: string, shouldReset: boolean = false) => {
+      if (loading || (!hasMore && !shouldReset)) return;
+
+      setLoading(true);
+
+      // Reset movies if requested
+      if (shouldReset) {
+        setMovies([]);
+        setHasMore(true);
+      }
+
+      try {
+        if (BACKEND_URL) {
+          // Fetch from backend API
+          let url: string;
+          // Use skipOverride if provided, otherwise use current movies.length
+          // When resetting, always start from 0
+          const skipMovies = shouldReset ? 0 : (skipOverride !== undefined ? skipOverride : movies.length);
+
+          let genre_match = '';
+          if(genres && !genres.includes('all')) {
+            genre_match = `&genres=${genres}`
+          }
+
+          const limit = 8;
+          if (countryCode || selectedCountry) {
+            const code = countryCode || selectedCountry;
+            url = `${BACKEND_URL}/view/best/${code.toUpperCase()}?skip=${skipMovies}${genre_match}&limit=${limit}`;
+          } else {
+            url = `${BACKEND_URL}/view/random/best/${skipMovies}?seed=${seed}${genre_match}&limit=${limit}`;
+          }
+
+          const response = await fetch(url);
+          if (response.ok) {
+            const newMovies = await response.json();
+            const mapped: Movie[] = newMovies.map((movie: DiscoverMovie) => (transferDiscoverMovie(movie)));
+
+            if (mapped.length === 0) {
+              setHasMore(false);
+            } else {
+              setMovies((prev) => shouldReset ? mapped : [...prev, ...mapped]);
+            }
+          } else {
+            toast.error(`Error on calling backend ${response.body}`);
+          }
+        } else {
+          // Fallback to mock data
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+
+          const shuffled = shuffleArray([...MOVIE_DATABASE]);
+          const existingIds = shouldReset ? new Set() : new Set(movies.map((m) => m.id));
+          const newMovies = shuffled
+            .filter((movie) => !existingIds.has(movie.id))
+            .slice(0, 6);
+
+          if (newMovies.length === 0) {
+            setHasMore(false);
+          } else {
+            setMovies((prev) => shouldReset ? newMovies : [...prev, ...newMovies]);
+          }
+        }
+      } catch (error) {
+        Sentry.captureException(error);
+        console.error(`Error loading movies: ${JSON.stringify(error)}`);
+        // Fallback to mock data on error
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        const shuffled = shuffleArray([...MOVIE_DATABASE]);
+        const existingIds = shouldReset ? new Set() : new Set(movies.map((m) => m.id));
+        const newMovies = shuffled
+          .filter((movie) => !existingIds.has(movie.id))
+          .slice(0, 6);
+
+        if (newMovies.length === 0) {
+          setHasMore(false);
+        } else {
+          setMovies((prev) => shouldReset ? newMovies : [...prev, ...newMovies]);
+        }
+      }
+
+      setLoading(false);
+    },
+    [loading, hasMore, movies, selectedCountry],
+  );
+
+  const transfer = (m: BackendMovie): Movie => {
+    return {
+      id: m._id,
+      title: m.original_title,
+      year: m.year,
+      country: m.estimated_country ? regionNames.of(m.estimated_country) : "Unknown",
+      countryCode: m.estimated_country || "",
+      countryFlag: m.estimated_country
+        ? `https://flagcdn.com/16x12/${m.estimated_country.toLowerCase()}.png`
+        : "",
+      director: m.credits?.crew?.filter(c => c.job === 'Director'),
+      rating:
+        m.imdb_vote_average > 0 ? m.imdb_vote_average : m.vote_average,
+      genres: m.genres?.map(genre => genre.name),
+      poster: m.poster_path
+        ? `https://image.tmdb.org/t/p/w300${m.poster_path}`
+        : "",
+      description: m.overview,
+    }
+  }
+
+  const transferDiscoverMovie = (m: DiscoverMovie): Movie => {
+    return {
+      id: m._id,
+      title: m.original_title,
+      year: m.year,
+      country: m.estimated_country ? regionNames.of(m.estimated_country) : "Unknown",
+      countryCode: m.estimated_country || "",
+      countryFlag: m.estimated_country
+        ? `https://flagcdn.com/16x12/${m.estimated_country.toLowerCase()}.png`
+        : "",
+      director: m.director,
+      rating:
+        m.imdb_vote_average > 0 ? m.imdb_vote_average : m.vote_average,
+      genres: m.genres?.map(genre => genre),
+      poster: m.poster_path
+        ? `https://image.tmdb.org/t/p/w300${m.poster_path}`
+        : "",
+      description: m.overview,
+    }
+  }
+
+  const loadMoviesForCountry = useCallback(async (countryCode: string) => {
+    setMovies([]);
+    setHasMore(true);
+    setLoading(true);
+
+    try {
+      if (BACKEND_URL) {
+        const limit = 10;
+        const url = `${BACKEND_URL}/view/best/${countryCode.toUpperCase()}?skip=0&limit=${limit}`;
+        const response = await fetch(url);
+        if (response.ok) {
+          const newMovies = await response.json();
+          const mapped: Movie[] = newMovies.map((movie: DiscoverMovie) => transferDiscoverMovie(movie));
+
+          if (mapped.length === 0) {
+            setHasMore(false);
+          } else {
+            setMovies(mapped);
+          }
+        } else {
+          toast.error(`Error on calling backend ${response.body}`);
+        }
+      } else {
+        // Fallback to mock data
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        const shuffled = shuffleArray([...MOVIE_DATABASE]);
+        const newMovies = shuffled.slice(0, 6);
+        setMovies(newMovies);
+      }
+    } catch (error) {
+      Sentry.captureException(error);
+      console.error("Error loading movies for country:", error);
+    }
+
+    setLoading(false);
+  }, []);
+
+  const fetchMovieDetails = useCallback(
+    async (movieId: number) => {
+      if (!BACKEND_URL) {
+        // Return existing movie data if no backend
+        return movies.find((m) => m.id === movieId);
+      }
+
+      try {
+        const response = await fetch(`${BACKEND_URL}/movie/${movieId}`);
+        if (response.ok) {
+          const data: BackendMovie = await response.json();
+          if(data) {
+            return transfer(data);
+          } else {
+            return null;
+          }
+        }
+      } catch (error) {
+        Sentry.captureException(error);
+        console.error("Error fetching movie details:", error);
+      }
+
+      // Fallback to existing data
+      return movies.find((m) => m.id === movieId);
+    },
+    [movies],
+  );
+
+  return {
+    movies,
+    loading,
+    hasMore,
+    loadMoreMovies,
+    loadMoviesForCountry,
+    fetchMovieDetails,
+  };
+};

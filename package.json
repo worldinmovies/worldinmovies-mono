@@ -1,0 +1,20 @@
+{
+  "name": "worldinmovies-mono",
+  "private": true,
+  "scripts": {
+    "test": "turbo run test",
+    "test:frontend": "turbo run test --filter=@worldinmovies/webapp",
+    "test:backend": "turbo run test --filter=@worldinmovies/tmdb",
+    "test:e2e": "turbo run test --filter=@worldinmovies/e2e",
+    "build": "turbo run build",
+    "build:docker:tmdb": "docker buildx build --platform linux/amd64,linux/arm64 -t seppaleinen/worldinmovies_tmdb:latest services/tmdb",
+    "build:docker:webapp": "docker buildx build --platform linux/amd64,linux/arm64 -t seppaleinen/worldinmovies_webapp:latest apps/webapp",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.0"
+  },
+  "packageManager": "pnpm@11.4.0"
+}

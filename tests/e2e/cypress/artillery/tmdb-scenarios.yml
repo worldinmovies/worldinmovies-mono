@@ -1,0 +1,54 @@
+config:
+  target: "https://tmdb.localhost"
+  payload:
+    # path is relative to the location of the test script
+    - path: "movie_ids.csv"
+      fields:
+        - "id"
+    - path: "countries.csv"
+      fields:
+        - "iso"
+  plugins:
+    expect:
+      reportFailuresAsErrors: true
+      outputFormat: prettyError
+      expectDefault200: true
+  tls:
+    rejectUnauthorized: false
+  # Enable the Playwright engine:
+  environments:
+    production:
+      target: "https://worldinmovies.duckdns.org"
+      phases:
+        - duration: 1200
+          arrivalRate: 10
+    local:
+      target: "https://tmdb.localhost"
+      phases:
+        - duration: 1200
+          arrivalRate: 20
+  phases:
+    - name: 'Breaking test'
+      duration: 120
+      rampTo: 70 # 60ok
+      maxVusers: 70
+  engines:
+    http:
+      aggregateByName: true
+      launchOptions:
+        headless: true
+      contextOptions:
+        ignoreHTTPSErrors: true
+scenarios:
+  - name: TMDB Scenario
+    flowFunction: "scenario"
+    flow:
+      - get:
+          url: /movie/{{ id }}
+      - think: 5
+      - get:
+          url: /movie/{{ id }}
+      - think: 5
+      - get:
+          url: /view/best/{{ iso }}
+      - think: 5

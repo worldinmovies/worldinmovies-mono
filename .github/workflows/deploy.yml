@@ -1,0 +1,46 @@
+name: Deploy
+
+on:
+  #push:
+  #  branches: [ "main" ]
+  #workflow_dispatch:
+  #  inputs:
+  #    trigger:
+  #      description: 'App to deploy, can be tmdb/webapp or an empty string, for deploying all'
+  #      required: false
+  #      default: ''
+
+concurrency:
+  group: ${{ github.workflow }}
+
+jobs:
+  deploy:
+    name: Setup wireguard connection, and deploy ${{ github.event.inputs.trigger }}
+    runs-on: ubuntu-20.04
+
+    steps:
+      - uses: seppaleinen/actions-ssh-wireguard@1.0
+        with:
+          # Required: The SSH user to connect as.
+          user: ${{ secrets.SSH_USER }}
+          # Required: The SSH host to connect to.
+          host: ${{ secrets.SSH_IP }}
+          # Required: The SSH port to connect to.
+          port: ${{ secrets.SSH_PORT }}
+          # Required: The SSH private key to use for authentication.
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          # Required: The WireGuard configuration to use for the tunnel.
+          conf: ${{ secrets.WIREGUARD_CONFIG }}
+          # Required: The script to run on the remote host after the tunnel is established.
+          script: "cd workspace/worldinmovies-mono/tests/e2e && git pull && docker compose pull && docker compose up -d ${{ github.event.inputs.trigger }}"
+
+      - name: Check errors
+        if: ${{ failure() }}
+        run: |
+          cd workspace/worldinmovies-mono/tests/e2e
+          git status
+          docker compose logs
+
+      - name: Cleanup
+        if: ${{ always() }}
+        run: docker system prune -f && exit && sudo wg-quick down wg0

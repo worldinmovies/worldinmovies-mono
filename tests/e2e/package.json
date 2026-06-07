@@ -1,0 +1,25 @@
+{
+  "name": "@worldinmovies/e2e",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "cypress:open": "cypress open",
+    "cypress:test": "cypress run",
+    "playwright:open": "playwright test --ui",
+    "playwright:test": "playwright test",
+    "artillery:run": "artillery run --output test-results/artillery-report.json cypress/artillery/tmdb-scenarios.yml && artillery report test-results/artillery-report.json"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@playwright/test": "^1.55.1",
+    "@types/node": "^24.5.2",
+    "artillery": "^2.0.25",
+    "cypress": "^15.3.0",
+    "mongodb": "^6.20.0",
+    "playwright": "^1.55.1",
+    "typescript": "^5.9.2"
+  }
+}

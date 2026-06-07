@@ -1,0 +1,144 @@
+services:
+  # DBS
+  mongo:
+    image: mongo:noble
+    ports:
+      - 27017:27017
+    container_name: mongo
+    command: --wiredTigerCacheSizeGB 8
+    volumes:
+      - ./persistent-data/mongo-data2:/data/db
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD, mongosh, --eval, db.adminCommand('ping')]
+      interval: 30s
+      timeout: 20s
+      start_period: 10s
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: seppa
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: tmdb
+
+  # Queues
+
+  redis:
+    image: redis:7-alpine
+    expose:
+      - "6379"
+    container_name: redis
+    healthcheck:
+      test: [CMD-SHELL, redis-cli ping | grep PONG]
+      interval: 30s
+      timeout: 3s
+      start_period: 10s
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    container_name: rabbitmq
+    expose:
+      - 5672
+    ports:
+      - 15672:15672
+    environment:
+      - RABBITMQ_URL=${RABBITMQ_URL:-rabbitmq}
+      - RABBITMQ_DEFAULT_USER=${MQ_USER:-seppa}
+      - RABBITMQ_DEFAULT_PASS=${MQ_PASS:-password}
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 3s
+      start_period: 5s
+
+  # Search Engine
+  meilisearch:
+    image: getmeili/meilisearch:v1
+    volumes:
+      - ./persistent-data/ms:/data.ms
+    ports:
+      - 7700:7700
+    environment:
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY:-BiX78W32AeClhKF_FYfkVsFmiaJJ0amhwTPInYtHUhY}
+    healthcheck:
+      test: [CMD, curl, -f, http://localhost:7700]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backends
+  tmdb:
+    image: seppaleinen/worldinmovies_tmdb:latest
+    container_name: tmdb
+    ports:
+      - 8020:8020
+    environment:
+      - TMDB_API=${TMDB_API}
+      - MEILISEARCH_API_KEY=${MEILI_MASTER_KEY:-BiX78W32AeClhKF_FYfkVsFmiaJJ0amhwTPInYtHUhY}
+      - SENTRY_API=${SENTRY_API_TMDB:-}
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-}
+      - REDIS_URL=${REDIS_URL:-redis://redis}
+      - MONGO_URL=${MONGO_URL:-mongo}
+      - MONGO_USER=${MONGO_USER:-seppa}
+      - MONGO_PASSWORD=${MONGO_PASSWORD:-password}
+      - RABBITMQ_URL=${RABBITMQ_URL:-rabbitmq}
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER:-seppa}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS:-password}
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: curl -k --fail http://localhost:8020/health
+      interval: 20s
+      timeout: 4s
+      retries: 3
+      start_period: 3s
+  tmdb-worker:
+    image: seppaleinen/worldinmovies_tmdb:latest
+    container_name: tmdb-worker
+    environment:
+      - TMDB_API=${TMDB_API}
+      - MEILISEARCH_API_KEY=${MEILI_MASTER_KEY:-BiX78W32AeClhKF_FYfkVsFmiaJJ0amhwTPInYtHUhY}
+      - SENTRY_API=${SENTRY_API_TMDB:-}
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - REDIS_URL=${REDIS_URL:-redis://redis}
+      - MONGO_URL=${MONGO_URL:-mongo}
+      - MONGO_USER=${MONGO_USER:-seppa}
+      - MONGO_PASSWORD=${MONGO_PASSWORD:-password}
+      - RABBITMQ_URL=${RABBITMQ_URL:-rabbitmq}
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER:-seppa}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS:-password}
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: celery -A settings inspect ping
+      interval: 30s
+      timeout: 5s
+      start_period: 5s
+    command: sh -c "python manage.py migrate --noinput && celery -A settings worker -l info"
+
+  # Frontend
+  webapp:
+    image: seppaleinen/worldinmovies_webapp:latest
+    ports:
+      - "${VITE_WEBAPP_PORT:?'VITE_WEBAPP_PORT must be set'}:80"
+    depends_on:
+      tmdb:
+        condition: service_healthy
+    environment:
+      - VITE_WEBAPP_PORT=${VITE_WEBAPP_PORT}
+      - VITE_TMDB_URL=${VITE_TMDB_URL:-tmdb.localhost}
+      - VITE_SENTRY_WEB=${VITE_SENTRY_WEB:-}
+      - TMDB_UPSTREAM=tmdb:8020
+
+volumes:
+  mongo_data:
