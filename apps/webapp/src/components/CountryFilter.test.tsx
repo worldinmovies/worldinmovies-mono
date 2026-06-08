@@ -2,6 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { CountryFilter } from '@/components/CountryFilter';
 
+// Mock the lazy-loaded Globe module so it resolves synchronously in tests
+vi.mock('@/components/Globe', () => ({
+  GlobeMap: () => <div data-testid="globe-map">GlobeMap Mock</div>,
+}));
+
 const mockCountries = [
   { country: 'Japan', countryCode: 'jp', flag: 'https://flagcdn.com/16x12/jp.png' },
   { country: 'France', countryCode: 'fr', flag: 'https://flagcdn.com/16x12/fr.png' },
@@ -13,7 +18,7 @@ describe('CountryFilter component', () => {
     vi.clearAllMocks();
   });
 
-  it('should render select dropdown with all countries', () => {
+  it('should render combobox with All Countries placeholder', () => {
     const onCountrySelect = vi.fn();
     render(
       <CountryFilter
@@ -24,9 +29,9 @@ describe('CountryFilter component', () => {
     );
 
     expect(screen.getByText('All Countries')).toBeInTheDocument();
-    expect(screen.getByText('Japan')).toBeInTheDocument();
-    expect(screen.getByText('France')).toBeInTheDocument();
-    expect(screen.getByText('Italy')).toBeInTheDocument();
+    // Country items are not in the DOM until dropdown opens (Radix portal)
+    // Verify the combobox trigger is present
+    expect(screen.getByRole('combobox')).toBeInTheDocument();
   });
 
   it('should show selected country', () => {
@@ -39,7 +44,9 @@ describe('CountryFilter component', () => {
       />
     );
 
-    expect(screen.getByText('Japan')).toBeInTheDocument();
+    // Japan appears in both the select trigger and the "Showing films from:" section
+    const japanElements = screen.getAllByText('Japan');
+    expect(japanElements.length).toBe(2);
     expect(screen.getByText('Showing films from:')).toBeInTheDocument();
     expect(screen.getByText('Clear filter')).toBeInTheDocument();
   });
@@ -57,8 +64,13 @@ describe('CountryFilter component', () => {
       />
     );
 
-    const select = screen.getByRole('combobox');
-    fireEvent.change(select, { target: { value: 'France' } });
+    // Open the Radix Select dropdown
+    const trigger = screen.getByRole('combobox');
+    fireEvent.click(trigger);
+
+    // Click the France option (rendered in portal)
+    const franceOption = screen.getByRole('option', { name: /France/i });
+    fireEvent.click(franceOption);
 
     expect(onCountrySelect).toHaveBeenCalledWith('France');
     expect(onCountryChange).toHaveBeenCalledWith('fr');
@@ -98,7 +110,7 @@ describe('CountryFilter component', () => {
     fireEvent.click(showMapButton);
 
     expect(screen.getByText('Hide Map')).toBeInTheDocument();
-    // GlobeMap should be rendered (lazy loaded with Suspense)
+    // Suspense fallback should appear while lazy component loads
     expect(container.querySelector('.animate-spin')).toBeInTheDocument();
   });
 
@@ -107,7 +119,7 @@ describe('CountryFilter component', () => {
 
     const { container } = render(
       <CountryFilter
-        selectedCountry="Japan"
+        selectedCountry={null}
         onCountrySelect={onCountrySelect}
         availableCountries={mockCountries}
       />
@@ -116,10 +128,15 @@ describe('CountryFilter component', () => {
     // Show map first
     const showMapButton = screen.getByText('Show Map');
     fireEvent.click(showMapButton);
+    expect(screen.getByText('Hide Map')).toBeInTheDocument();
 
-    // Select a country - map should hide
-    const select = screen.getByRole('combobox');
-    fireEvent.change(select, { target: { value: 'France' } });
+    // Open the Radix Select dropdown
+    const trigger = screen.getByRole('combobox');
+    fireEvent.click(trigger);
+
+    // Select France - map should hide
+    const franceOption = screen.getByRole('option', { name: /France/i });
+    fireEvent.click(franceOption);
 
     expect(screen.getByText('Show Map')).toBeInTheDocument();
   });
@@ -134,14 +151,15 @@ describe('CountryFilter component', () => {
       />
     );
 
-    const select = screen.getByRole('combobox');
-    fireEvent.click(select);
+    // Open the Radix Select dropdown
+    const trigger = screen.getByRole('combobox');
+    fireEvent.click(trigger);
 
     // Flag should be rendered inside select items
     expect(screen.getByText('Japan')).toBeInTheDocument();
   });
 
-  it('should render GlobeMap when map is shown', () => {
+  it('should render GlobeMap when map is shown', async () => {
     const onCountrySelect = vi.fn();
 
     const { container } = render(
@@ -154,9 +172,33 @@ describe('CountryFilter component', () => {
       />
     );
 
+    // Click Show Map
     fireEvent.click(screen.getByText('Show Map'));
 
-    // GlobeMap lazy component should be rendered inside Suspense
-    expect(container.innerHTML).toContain('GlobeMap');
+    // The lazy component resolves via the mock above
+    // Suspense might need a tick to resolve the lazy promise
+    const globeMap = await screen.findByTestId('globe-map');
+    expect(globeMap).toBeInTheDocument();
+    expect(globeMap).toHaveTextContent('GlobeMap Mock');
+  });
+
+  it('should render country items when dropdown is opened', () => {
+    const onCountrySelect = vi.fn();
+    render(
+      <CountryFilter
+        selectedCountry={null}
+        onCountrySelect={onCountrySelect}
+        availableCountries={mockCountries}
+      />
+    );
+
+    // Open the Radix Select dropdown
+    const trigger = screen.getByRole('combobox');
+    fireEvent.click(trigger);
+
+    // All country options should be accessible
+    expect(screen.getByRole('option', { name: /Japan/i })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /France/i })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /Italy/i })).toBeInTheDocument();
   });
 });

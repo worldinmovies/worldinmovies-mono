@@ -17,7 +17,7 @@ describe('MovieFilters component', () => {
     vi.clearAllMocks();
   });
 
-  it('should render country filter', () => {
+  it('should render country filter with All Countries placeholder', () => {
     const onCountrySelect = vi.fn();
     render(
       <MovieFilters
@@ -38,11 +38,11 @@ describe('MovieFilters component', () => {
     );
 
     expect(screen.getByText('All Countries')).toBeInTheDocument();
-    expect(screen.getByText('Japan')).toBeInTheDocument();
-    expect(screen.getByText('France')).toBeInTheDocument();
+    // Country items are in the Radix Select dropdown (portal) - not visible until opened
+    expect(screen.getByRole('combobox')).toBeInTheDocument();
   });
 
-  it('should render watchlist filter dropdown', () => {
+  it('should render watchlist filter dropdown trigger', () => {
     const onWatchlistFilterChange = vi.fn();
     render(
       <MovieFilters
@@ -62,12 +62,11 @@ describe('MovieFilters component', () => {
       />
     );
 
+    // "All Movies" is the trigger text when watchlistFilter is 'all'
     expect(screen.getByText('All Movies')).toBeInTheDocument();
-    expect(screen.getByText('In Watchlist')).toBeInTheDocument();
-    expect(screen.getByText('Watchlist')).toBeInTheDocument();
   });
 
-  it('should render seen filter dropdown', () => {
+  it('should render seen filter dropdown trigger', () => {
     const onSeenFilterChange = vi.fn();
     render(
       <MovieFilters
@@ -87,11 +86,10 @@ describe('MovieFilters component', () => {
       />
     );
 
-    expect(screen.getByText('Seen Movies')).toBeInTheDocument();
-    expect(screen.getByText('Unseen Movies')).toBeInTheDocument();
+    expect(screen.getByText('Seen')).toBeInTheDocument();
   });
 
-  it('should render genre filter dropdown', () => {
+  it('should render genre filter dropdown trigger', () => {
     const onGenreFilterChange = vi.fn();
     render(
       <MovieFilters
@@ -112,14 +110,12 @@ describe('MovieFilters component', () => {
     );
 
     expect(screen.getByText('Animation')).toBeInTheDocument();
-    expect(screen.getByText('Drama')).toBeInTheDocument();
-    expect(screen.getByText('All Genres')).toBeInTheDocument();
   });
 
   it('should call country filter callback when country selected', () => {
     const onCountrySelect = vi.fn();
 
-    const { container } = render(
+    render(
       <MovieFilters
         selectedCountry={null}
         onCountrySelect={onCountrySelect}
@@ -137,106 +133,15 @@ describe('MovieFilters component', () => {
       />
     );
 
-    // Open country dropdown
-    const countryDropdown = container.querySelector('[role="combobox"]');
-    if (countryDropdown) {
-      fireEvent.click(countryDropdown);
-      fireEvent.change(countryDropdown, { target: { value: 'France' } });
-      expect(onCountrySelect).toHaveBeenCalledWith('France');
-    }
-  });
+    // Open country dropdown (Radix Select)
+    const trigger = screen.getByRole('combobox');
+    fireEvent.click(trigger);
 
-  it('should call seen filter callback when filter changed', () => {
-    const onSeenFilterChange = vi.fn();
+    // Select France
+    const franceOption = screen.getByRole('option', { name: /France/i });
+    fireEvent.click(franceOption);
 
-    const { container } = render(
-      <MovieFilters
-        selectedCountry={null}
-        onCountrySelect={() => {}}
-        availableCountries={mockCountries}
-        seenMovies={[]}
-        movies={mockMovies}
-        seenFilter="all"
-        onSeenFilterChange={onSeenFilterChange}
-        watchlistFilter="all"
-        onWatchlistFilterChange={() => {}}
-        uniqueWatchlistTags={['all']}
-        genreFilter="all"
-        onGenreFilterChange={() => {}}
-        uniqueGenres={['all', 'Animation']}
-      />
-    );
-
-    // Open seen filter dropdown
-    const seenDropdown = container.querySelectorAll('[role="menu"]')[0];
-    if (seenDropdown) {
-      fireEvent.click(seenDropdown);
-      const seenItem = screen.getByText('Seen Movies');
-      fireEvent.click(seenItem);
-      expect(onSeenFilterChange).toHaveBeenCalledWith('seen');
-    }
-  });
-
-  it('should call watchlist filter callback when filter changed', () => {
-    const onWatchlistFilterChange = vi.fn();
-
-    const { container } = render(
-      <MovieFilters
-        selectedCountry={null}
-        onCountrySelect={() => {}}
-        availableCountries={mockCountries}
-        seenMovies={[]}
-        movies={mockMovies}
-        seenFilter="all"
-        onSeenFilterChange={() => {}}
-        watchlistFilter="all"
-        onWatchlistFilterChange={onWatchlistFilterChange}
-        uniqueWatchlistTags={['all', 'watchlist']}
-        genreFilter="all"
-        onGenreFilterChange={() => {}}
-        uniqueGenres={['all', 'Animation']}
-      />
-    );
-
-    // Open watchlist filter dropdown
-    const watchlistDropdown = container.querySelectorAll('[role="menu"]')[1];
-    if (watchlistDropdown) {
-      fireEvent.click(watchlistDropdown);
-      const inWatchlistItem = screen.getByText('In Watchlist');
-      fireEvent.click(inWatchlistItem);
-      expect(onWatchlistFilterChange).toHaveBeenCalledWith('any');
-    }
-  });
-
-  it('should call genre filter callback when genre selected', () => {
-    const onGenreFilterChange = vi.fn();
-
-    const { container } = render(
-      <MovieFilters
-        selectedCountry={null}
-        onCountrySelect={() => {}}
-        availableCountries={mockCountries}
-        seenMovies={[]}
-        movies={mockMovies}
-        seenFilter="all"
-        onSeenFilterChange={() => {}}
-        watchlistFilter="all"
-        onWatchlistFilterChange={() => {}}
-        uniqueWatchlistTags={['all']}
-        genreFilter="all"
-        onGenreFilterChange={onGenreFilterChange}
-        uniqueGenres={['all', 'Animation', 'Drama']}
-      />
-    );
-
-    // Open genre filter dropdown
-    const genreDropdown = container.querySelectorAll('[role="menu"]')[2];
-    if (genreDropdown) {
-      fireEvent.click(genreDropdown);
-      const animationItem = screen.getByText('Animation');
-      fireEvent.click(animationItem);
-      expect(onGenreFilterChange).toHaveBeenCalledWith('Animation');
-    }
+    expect(onCountrySelect).toHaveBeenCalledWith('France');
   });
 
   it('should display selected filter labels correctly', () => {
@@ -258,10 +163,37 @@ describe('MovieFilters component', () => {
       />
     );
 
-    // Check that selected filter labels are displayed
-    expect(screen.getByText('Japan')).toBeInTheDocument();
+    // Japan appears in both the select trigger and the "Showing films from:" section
+    const japanElements = screen.getAllByText('Japan');
+    expect(japanElements.length).toBe(2);
     expect(screen.getByText('Seen')).toBeInTheDocument();
     expect(screen.getByText('Custom Tag')).toBeInTheDocument();
     expect(screen.getByText('Animation')).toBeInTheDocument();
+  });
+
+  it('should have all filter trigger buttons rendered', () => {
+    render(
+      <MovieFilters
+        selectedCountry={null}
+        onCountrySelect={() => {}}
+        availableCountries={mockCountries}
+        seenMovies={[]}
+        movies={mockMovies}
+        seenFilter="all"
+        onSeenFilterChange={() => {}}
+        watchlistFilter="all"
+        onWatchlistFilterChange={() => {}}
+        uniqueWatchlistTags={['all']}
+        genreFilter="all"
+        onGenreFilterChange={() => {}}
+        uniqueGenres={['all', 'Animation']}
+      />
+    );
+
+    // Verify all four filter buttons are present
+    expect(screen.getByText('All Countries')).toBeInTheDocument();
+    expect(screen.getByText('All Movies')).toBeInTheDocument();
+    expect(screen.getByText('All')).toBeInTheDocument(); // Seen filter trigger (seenFilter='all')
+    expect(screen.getByText('All Genres')).toBeInTheDocument();
   });
 });

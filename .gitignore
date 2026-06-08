@@ -35,3 +35,9 @@ playwright-report/
 
 # TypeScript
 *.tsbuildinfo
+
+# turbo build cache
+.turbo/cache/
+
+# vitest temp files
+*.timestamp-*.mjs
