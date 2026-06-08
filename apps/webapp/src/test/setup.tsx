@@ -103,17 +103,41 @@ mockIntersectionObserver.mockReturnValue({
 });
 vi.stubGlobal('IntersectionObserver', mockIntersectionObserver);
 
-// Mock matchMedia
-const matchMediaMock = (query: string) => ({
-  matches: false,
-  media: query,
-  onchange: null,
-  addListener: vi.fn(),
-  removeListener: vi.fn(),
-  addEventListener: vi.fn(),
-  removeEventListener: vi.fn(),
-  dispatchEvent: vi.fn(),
+// Mock ResizeObserver (used by cmdk/Command component)
+const mockResizeObserver = vi.fn();
+mockResizeObserver.mockReturnValue({
+  observe: vi.fn(),
+  unobserve: vi.fn(),
+  disconnect: vi.fn(),
 });
+vi.stubGlobal('ResizeObserver', mockResizeObserver);
+
+// Mock matchMedia with cached instances (same query = same mql object)
+const matchMediaInstances = new Map<string, any>();
+const matchMediaMock = (query: string) => {
+  // Return cached instance for the same query string
+  if (matchMediaInstances.has(query)) {
+    return matchMediaInstances.get(query);
+  }
+  
+  const listeners = new Set<EventListener>();
+  const mql = {
+    matches: window.innerWidth < 768,
+    media: query,
+    onchange: null,
+    addListener: (cb: EventListener) => listeners.add(cb),
+    removeListener: (cb: EventListener) => listeners.delete(cb),
+    addEventListener: (_: string, cb: EventListener) => listeners.add(cb),
+    removeEventListener: (_: string, cb: EventListener) => listeners.delete(cb),
+    dispatchEvent: (event: Event) => {
+      mql.matches = window.innerWidth < 768;
+      listeners.forEach(cb => cb(event));
+      return true;
+    },
+  };
+  matchMediaInstances.set(query, mql);
+  return mql;
+};
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: vi.fn().mockImplementation(matchMediaMock),
@@ -121,21 +145,34 @@ Object.defineProperty(window, 'matchMedia', {
 
 // Mock localStorage
 const localStorageMock = {
-  getItem: vi.fn((key: string) => null),
-  setItem: vi.fn((key: string, value: string) => {}),
-  removeItem: vi.fn((key: string) => {}),
-  clear: vi.fn(),
+  storage: new Map<string, string>(),
+  getItem: vi.fn((key: string) => localStorageMock.storage.get(key) || null),
+  setItem: vi.fn((key: string, value: string) => {
+    localStorageMock.storage.set(key, value);
+  }),
+  removeItem: vi.fn((key: string) => {
+    localStorageMock.storage.delete(key);
+  }),
+  clear: vi.fn(() => {
+    localStorageMock.storage.clear();
+  }),
 };
 vi.stubGlobal('localStorage', localStorageMock);
 
-// Mock performance
+// Mock performance (preserve existing now() if available)
 vi.stubGlobal('performance', {
+  now: () => 0,
   getEntriesByType: vi.fn(() => [{ type: 'navigate' }]),
 });
+
+// scrollIntoView is not implemented in jsdom - needed by cmdk/Command
+Element.prototype.scrollIntoView = vi.fn();
 
 // Cleanup after each test
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
   vi.clearAllTimers();
+  localStorageMock.storage.clear();
+  matchMediaInstances.clear();
 });

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { MovieDetailModal } from '@/components/MovieDetailModal';
 import { Movie } from '@/lib/models';
 
@@ -11,11 +11,23 @@ const mockMovie: Movie = {
   countryCode: 'jp',
   countryFlag: 'https://flagcdn.com/16x12/jp.png',
   director: 'Katsuhiro Otomo',
+  directors: 'Katsuhiro Otomo',
   rating: 8.5,
   genres: ['Animation'],
   poster: 'https://image.tmdb.org/t/p/w300/akira.jpg',
   description: 'Cyberpunk classic',
 };
+
+/** Find the "Add to Watchlist" button (not the h4 heading) */
+function getWatchlistButton() {
+  const all = screen.getAllByText('Add to Watchlist');
+  return all.find(el => el.tagName === 'BUTTON')!;
+}
+
+/** Find the "Remove from Watchlist" button */
+function getRemoveWatchlistButton() {
+  return screen.getByRole('button', { name: /Remove from Watchlist/i });
+}
 
 describe('MovieDetailModal component', () => {
   beforeEach(() => {
@@ -23,7 +35,7 @@ describe('MovieDetailModal component', () => {
     localStorage.clear();
   });
 
-  it('should show loading state when isLoading is true', () => {
+  it('should show loading spinner when isLoading is true', () => {
     render(
       <MovieDetailModal
         movie={null}
@@ -36,7 +48,9 @@ describe('MovieDetailModal component', () => {
       />
     );
 
-    expect(screen.getByText(/Processing|Loading/i)).toBeInTheDocument();
+    // Dialog renders content in a portal; use document.querySelector
+    const spinner = document.querySelector('.animate-spin');
+    expect(spinner).toBeInTheDocument();
   });
 
   it('should render movie details when movie is provided', () => {
@@ -127,14 +141,18 @@ describe('MovieDetailModal component', () => {
       />
     );
 
-    const watchlistButton = screen.getByText('Add to Watchlist');
-    fireEvent.click(watchlistButton);
+    const watchlistButton = getWatchlistButton();
+    // Simulate a short press: mouseDown then mouseUp
+    fireEvent.mouseDown(watchlistButton);
+    fireEvent.mouseUp(watchlistButton);
 
-    expect(screen.getByText('Remove from Watchlist')).toBeInTheDocument();
+    expect(getRemoveWatchlistButton()).toBeInTheDocument();
     expect(localStorage.getItem('watchlist')).toBeTruthy();
   });
 
   it('should show custom tag input on long press', () => {
+    vi.useFakeTimers();
+
     render(
       <MovieDetailModal
         movie={mockMovie}
@@ -146,18 +164,22 @@ describe('MovieDetailModal component', () => {
       />
     );
 
-    const watchlistButton = screen.getByText('Add to Watchlist');
-
-    // Simulate long press
+    const watchlistButton = getWatchlistButton();
     fireEvent.mouseDown(watchlistButton);
 
-    // Wait for 500ms long press timer
-    setTimeout(() => {
-      expect(screen.getByPlaceholderText('Enter custom tag...')).toBeInTheDocument();
-    }, 550);
+    // Advance past the 500ms long press threshold
+    act(() => {
+      vi.advanceTimersByTime(510);
+    });
+
+    expect(screen.getByPlaceholderText('Enter custom tag...')).toBeInTheDocument();
+
+    vi.useRealTimers();
   });
 
   it('should submit custom tag', () => {
+    vi.useFakeTimers();
+
     render(
       <MovieDetailModal
         movie={mockMovie}
@@ -169,21 +191,26 @@ describe('MovieDetailModal component', () => {
       />
     );
 
-    const watchlistButton = screen.getByText('Add to Watchlist');
+    // Trigger long press
+    const watchlistButton = getWatchlistButton();
     fireEvent.mouseDown(watchlistButton);
+    act(() => {
+      vi.advanceTimersByTime(510);
+    });
 
-    setTimeout(() => {
-      const input = screen.getByPlaceholderText('Enter custom tag...');
-      fireEvent.change(input, { target: { value: 'watch later' } });
+    const input = screen.getByPlaceholderText('Enter custom tag...');
+    fireEvent.change(input, { target: { value: 'watch later' } });
 
-      const submitButton = screen.getByText('Add');
-      fireEvent.click(submitButton);
+    const submitButton = screen.getByText('Add');
+    fireEvent.click(submitButton);
 
-      expect(screen.getByText('Remove from Watchlist')).toBeInTheDocument();
-    }, 550);
+    expect(getRemoveWatchlistButton()).toBeInTheDocument();
+
+    vi.useRealTimers();
   });
 
   it('should remove from watchlist', () => {
+    // Pre-populate localStorage so component loads with item in watchlist
     localStorage.setItem('watchlist', JSON.stringify([{ movie: mockMovie, tag: 'watchlist' }]));
 
     render(
@@ -197,10 +224,10 @@ describe('MovieDetailModal component', () => {
       />
     );
 
-    const removeButton = screen.getByText('Remove from Watchlist');
+    const removeButton = getRemoveWatchlistButton();
     fireEvent.click(removeButton);
 
-    expect(screen.getByText('Add to Watchlist')).toBeInTheDocument();
+    expect(getWatchlistButton()).toBeInTheDocument();
   });
 
   it('should navigate to previous movie', () => {
@@ -223,8 +250,12 @@ describe('MovieDetailModal component', () => {
       />
     );
 
-    const prevButton = screen.getByLabelText(/prev/i) || screen.getByText(/ChevronLeft/i);
-    fireEvent.click(prevButton);
+    // Radix Dialog renders content in portal; use document.querySelector
+    const prevIcon = document.querySelector('.lucide-chevron-left');
+    expect(prevIcon).toBeInTheDocument();
+    const prevButton = prevIcon!.closest('button');
+    expect(prevButton).toBeInTheDocument();
+    fireEvent.click(prevButton!);
 
     expect(navigateSpy).toHaveBeenCalledWith('prev');
   });
@@ -248,8 +279,11 @@ describe('MovieDetailModal component', () => {
       />
     );
 
-    const nextButton = screen.getByText(/ChevronRight/i);
-    fireEvent.click(nextButton);
+    const nextIcon = document.querySelector('.lucide-chevron-right');
+    expect(nextIcon).toBeInTheDocument();
+    const nextButton = nextIcon!.closest('button');
+    expect(nextButton).toBeInTheDocument();
+    fireEvent.click(nextButton!);
 
     expect(navigateSpy).toHaveBeenCalledWith('next');
   });
@@ -268,7 +302,9 @@ describe('MovieDetailModal component', () => {
       />
     );
 
+    // Find the X close button in the Dialog portal (sr-only "Close" text)
     const closeButton = screen.getByRole('button', { name: /close/i });
+    expect(closeButton).toBeInTheDocument();
     fireEvent.click(closeButton);
 
     expect(closeSpy).toHaveBeenCalled();
@@ -292,14 +328,17 @@ describe('MovieDetailModal component', () => {
       />
     );
 
+    // Mark as seen
     const seenButton = screen.getByText('Mark as Seen');
     fireEvent.click(seenButton);
 
     expect(seenChangedHandler).toHaveBeenCalled();
     expect(localStorage.getItem('seenMovies')).toBeTruthy();
 
-    const watchlistButton = screen.getByText('Add to Watchlist');
-    fireEvent.click(watchlistButton);
+    // Add to watchlist via mouseDown + mouseUp
+    const watchlistButton = getWatchlistButton();
+    fireEvent.mouseDown(watchlistButton);
+    fireEvent.mouseUp(watchlistButton);
 
     expect(watchlistChangedHandler).toHaveBeenCalled();
     expect(localStorage.getItem('watchlist')).toBeTruthy();
@@ -308,8 +347,8 @@ describe('MovieDetailModal component', () => {
     window.removeEventListener('watchlistChanged', watchlistChangedHandler as any);
   });
 
-  it('should show loading state when movie is null', () => {
-    const { container } = render(
+  it('should show loading spinner when movie is null and not loading', () => {
+    render(
       <MovieDetailModal
         movie={null}
         isOpen={true}
@@ -321,7 +360,23 @@ describe('MovieDetailModal component', () => {
       />
     );
 
-    // When isLoading is false and movie is null, it shows nothing
-    expect(container.innerHTML).toBe('');
+    // When isLoading is false and movie is null, spinner is in the Dialog portal
+    const spinner = document.querySelector('.animate-spin');
+    expect(spinner).toBeInTheDocument();
+  });
+
+  it('should display director name', () => {
+    render(
+      <MovieDetailModal
+        movie={mockMovie}
+        isOpen={true}
+        onClose={() => {}}
+        movies={[mockMovie]}
+        currentIndex={0}
+        onNavigate={() => {}}
+      />
+    );
+
+    expect(screen.getByText(/Katsuhiro Otomo/)).toBeInTheDocument();
   });
 });
