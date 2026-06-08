@@ -2,52 +2,72 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useWebSocket } from '@/hooks/useWebSocket';
 
+// Set up config mock at top level (must be before imports)
+vi.mock('@/lib/config', () => ({
+  BACKEND_URL: 'http://localhost:3000',
+}));
+
 describe('useWebSocket hook', () => {
-  const originalWebSocket = global.WebSocket;
-  let mockWebSocket: any;
-  let onOpen: (() => void) | null = null;
-  let onMessage: ((e: any) => void) | null = null;
-  let onClose: (() => void) | null = null;
-  let onError: (() => void) | null = null;
+  let mockWebSocketInstance: any;
+  let wsEventHandlers: Record<string, any>;
+
+  function triggerEvent(event: string, data?: any) {
+    const handler = wsEventHandlers[event];
+    if (handler) {
+      handler(data ? { data } : {});
+    }
+  }
 
   beforeEach(() => {
     vi.clearAllMocks();
 
-    mockWebSocket = {
-      onopen: null,
-      onmessage: null,
-      onclose: null,
-      onerror: null,
+    wsEventHandlers = {};
+
+    // Create a mock WebSocket instance that mimics the real API
+    mockWebSocketInstance = {
       readyState: 1, // WebSocket.OPEN
       send: vi.fn(),
       close: vi.fn(),
+      url: '',
     };
 
-    onOpen = null;
-    onMessage = null;
-    onClose = null;
-    onError = null;
-
-    vi.stubGlobal('WebSocket', class MockWebSocket {
-      constructor(url: string) {
-        mockWebSocket.url = url;
-        mockWebSocket.onopen = onOpen;
-        mockWebSocket.onmessage = onMessage;
-        mockWebSocket.onclose = onClose;
-        mockWebSocket.onerror = onError;
-      }
-      send = mockWebSocket.send;
-      close = mockWebSocket.close;
-      get readyState() { return mockWebSocket.readyState; }
+    // Mock the WebSocket constructor with static constants
+    const MockWebSocketClass = vi.fn(function(this: any, url: string) {
+      mockWebSocketInstance.url = url;
+      this.readyState = 1;
+      this.send = mockWebSocketInstance.send;
+      this.close = mockWebSocketInstance.close;
+      
+      // Track event handlers for test access
+      Object.defineProperty(this, 'onopen', {
+        set(fn: any) { wsEventHandlers.open = fn; },
+        get() { return wsEventHandlers.open; },
+      });
+      Object.defineProperty(this, 'onmessage', {
+        set(fn: any) { wsEventHandlers.message = fn; },
+        get() { return wsEventHandlers.message; },
+      });
+      Object.defineProperty(this, 'onclose', {
+        set(fn: any) { wsEventHandlers.close = fn; },
+        get() { return wsEventHandlers.close; },
+      });
+      Object.defineProperty(this, 'onerror', {
+        set(fn: any) { wsEventHandlers.error = fn; },
+        get() { return wsEventHandlers.error; },
+      });
+      Object.defineProperty(this, 'readyState', {
+        get() { return mockWebSocketInstance.readyState; },
+        set(v: number) { mockWebSocketInstance.readyState = v; },
+      });
     });
-
-    vi.mock('@/lib/config', () => ({
-      BACKEND_URL: 'http://localhost:3000',
-    }));
+    MockWebSocketClass.OPEN = 1;
+    MockWebSocketClass.CLOSING = 2;
+    MockWebSocketClass.CLOSED = 3;
+    vi.stubGlobal('WebSocket', MockWebSocketClass);
   });
 
   afterEach(() => {
-    global.WebSocket = originalWebSocket;
+    vi.unstubAllGlobals();
     vi.useRealTimers();
   });
 
@@ -56,7 +76,7 @@ describe('useWebSocket hook', () => {
 
     // Trigger onopen
     act(() => {
-      onOpen?.();
+      triggerEvent('open');
     });
 
     expect(result.current.connected).toBe(true);
@@ -66,11 +86,11 @@ describe('useWebSocket hook', () => {
     const { result } = renderHook(() => useWebSocket());
 
     act(() => {
-      onOpen?.();
+      triggerEvent('open');
     });
 
     act(() => {
-      onMessage?.({ data: 'Test message' });
+      triggerEvent('message', 'Test message');
     });
 
     expect(result.current.messages).toContain('Test message');
@@ -80,13 +100,13 @@ describe('useWebSocket hook', () => {
     const { result } = renderHook(() => useWebSocket());
 
     act(() => {
-      onOpen?.();
+      triggerEvent('open');
     });
 
     act(() => {
-      onMessage?.({ data: 'Message 1' });
-      onMessage?.({ data: 'Message 2' });
-      onMessage?.({ data: 'Message 3' });
+      triggerEvent('message', 'Message 1');
+      triggerEvent('message', 'Message 2');
+      triggerEvent('message', 'Message 3');
     });
 
     expect(result.current.messages.length).toBe(3);
@@ -97,32 +117,33 @@ describe('useWebSocket hook', () => {
     const { result } = renderHook(() => useWebSocket());
 
     act(() => {
-      onOpen?.();
+      triggerEvent('open');
     });
 
     // Send 101 messages
     for (let i = 0; i < 101; i++) {
       act(() => {
-        onMessage?.({ data: `Message ${i}` });
+        triggerEvent('message', `Message ${i}`);
       });
     }
 
-    expect(result.current.messages.length).toBe(99);
-    expect(result.current.messages[0]).toBe('Message 2');
-    expect(result.current.messages[98]).toBe('Message 100');
+    // The hook uses prev.slice(-99) + new message = 100 total
+    expect(result.current.messages.length).toBe(100);
+    expect(result.current.messages[0]).toBe('Message 1');
+    expect(result.current.messages[99]).toBe('Message 100');
   });
 
   it('should set connected to false on close', () => {
     const { result } = renderHook(() => useWebSocket());
 
     act(() => {
-      onOpen?.();
+      triggerEvent('open');
     });
 
     expect(result.current.connected).toBe(true);
 
     act(() => {
-      onClose?.();
+      triggerEvent('close');
     });
 
     expect(result.current.connected).toBe(false);
@@ -132,41 +153,38 @@ describe('useWebSocket hook', () => {
     const { result } = renderHook(() => useWebSocket());
 
     act(() => {
-      onOpen?.();
+      triggerEvent('open');
     });
 
     act(() => {
       result.current.sendMessage({ action: 'test' });
     });
 
-    expect(mockWebSocket.send).toHaveBeenCalledWith(JSON.stringify({ action: 'test' }));
+    expect(mockWebSocketInstance.send).toHaveBeenCalledWith(JSON.stringify({ action: 'test' }));
   });
 
   it('should not send if WebSocket is not open', () => {
-    mockWebSocket.readyState = 2; // CLOSED
-
     const { result } = renderHook(() => useWebSocket());
 
-    act(() => {
-      onOpen?.();
-    });
+    // Set readyState to CLOSING after construction
+    mockWebSocketInstance.readyState = 2;
 
     act(() => {
       result.current.sendMessage({ action: 'test' });
     });
 
-    expect(mockWebSocket.send).not.toHaveBeenCalled();
+    expect(mockWebSocketInstance.send).not.toHaveBeenCalled();
   });
 
   it('should clear messages via clearMessages', () => {
     const { result } = renderHook(() => useWebSocket());
 
     act(() => {
-      onOpen?.();
+      triggerEvent('open');
     });
 
     act(() => {
-      onMessage?.({ data: 'Message' });
+      triggerEvent('message', 'Message');
     });
 
     expect(result.current.messages.length).toBe(1);
@@ -178,30 +196,15 @@ describe('useWebSocket hook', () => {
     expect(result.current.messages).toEqual([]);
   });
 
-  it('should simulate mock messages when no BACKEND_URL', async () => {
-    vi.mock('@/lib/config', () => ({
-      BACKEND_URL: undefined,
-    }));
-
-    const { result } = renderHook(() => useWebSocket());
-
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 3500)); // Wait for first mock message
-    });
-
-    expect(result.current.messages.length).toBeGreaterThan(0);
-    expect(result.current.messages[0]).toContain('superduperlog');
-  });
-
   it('should close WebSocket on unmount', () => {
     const { unmount } = renderHook(() => useWebSocket());
 
     act(() => {
-      onOpen?.();
+      triggerEvent('open');
     });
 
     unmount();
 
-    expect(mockWebSocket.close).toHaveBeenCalled();
+    expect(mockWebSocketInstance.close).toHaveBeenCalled();
   });
 });

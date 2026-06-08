@@ -1,6 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { useStatus } from '@/hooks/useStatus';
+
+// Mock config module at top level - value inlined since vi.mock is hoisted
+vi.mock('@/lib/config', () => ({
+  BACKEND_URL: 'http://localhost:3000',
+}));
+
+const mockBackendUrl = 'http://localhost:3000';
 
 describe('useStatus hook', () => {
   beforeEach(() => {
@@ -18,37 +25,21 @@ describe('useStatus hook', () => {
       json: async () => mockStatus,
     }));
 
-    vi.mock('@/lib/config', () => ({
-      BACKEND_URL: 'http://localhost:3000',
-    }));
+    renderHook(() => useStatus());
 
-    const { waitFor } = renderHook(() => useStatus());
-
-    await act(async () => {
-      await waitFor(() => {
-        // Status should be set
-      });
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(`${mockBackendUrl}/status`);
     });
-
-    // The hook should have called fetch
-    expect(fetch).toHaveBeenCalledWith('http://localhost:3000/status');
   });
 
   it('should handle fetch errors gracefully', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network error')));
 
-    vi.mock('@/lib/config', () => ({
-      BACKEND_URL: 'http://localhost:3000',
-    }));
-
     const { result } = renderHook(() => useStatus());
 
-    // Should not throw
-    await act(async () => {
-      // Wait for effect to run
+    await waitFor(() => {
+      expect(result.current.status).toBeUndefined();
     });
-
-    expect(result.current.status).toBeUndefined();
   });
 
   it('should return status object with correct shape', async () => {
@@ -62,18 +53,11 @@ describe('useStatus hook', () => {
       json: async () => mockStatus,
     }));
 
-    vi.mock('@/lib/config', () => ({
-      BACKEND_URL: 'http://localhost:3000',
-    }));
+    renderHook(() => useStatus());
 
-    const { waitFor } = renderHook(() => useStatus());
-
-    await act(async () => {
-      await waitFor(() => {
-        // Wait for status to be set
-      });
+    await waitFor(() => {
+      // Wait for fetch to have been called
+      expect(fetch).toHaveBeenCalledWith(`${mockBackendUrl}/status`);
     });
-
-    expect(fetch).toHaveBeenCalledWith('http://localhost:3000/status');
   });
 });
