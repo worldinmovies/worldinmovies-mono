@@ -62,6 +62,60 @@ jobs:
     - name: Run tests
       run: pnpm vitest run
 
+  build-webapp:
+    name: Build webapp Docker image
+    runs-on: ubuntu-latest
+    needs: [frontend-test]
+    strategy:
+      fail-fast: true
+      matrix:
+        platform:
+          - linux/amd64
+          - linux/arm64
+    steps:
+      - name: Prepare
+        run: |
+          platform=${{ matrix.platform }}
+          echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV
+      - uses: actions/checkout@v4
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: seppaleinen/worldinmovies_webapp
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: apps/webapp/Dockerfile
+          platforms: ${{ matrix.platform }}
+          labels: ${{ steps.meta.outputs.labels }}
+          outputs: type=image,name=seppaleinen/worldinmovies_webapp,push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=registry,ref=seppaleinen/worldinmovies_webapp:latest
+          cache-to: type=inline
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests-webapp
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests-webapp/${digest#sha256:}"
+      - name: Upload digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-webapp-${{ env.PLATFORM_PAIR }}
+          path: /tmp/digests-webapp/*
+          if-no-files-found: error
+          retention-days: 1
+
   build-tmdb:
     name: Build TMDB Docker image
     runs-on: ubuntu-latest
@@ -111,7 +165,7 @@ jobs:
       - name: Upload digest
         uses: actions/upload-artifact@v4
         with:
-          name: digests-${{ env.PLATFORM_PAIR }}
+          name: digests-tmdb-${{ env.PLATFORM_PAIR }}
           path: /tmp/digests/*
           if-no-files-found: error
           retention-days: 1
@@ -125,7 +179,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: /tmp/digests
-          pattern: digests-*
+          pattern: digests-tmdb-*
           merge-multiple: true
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -147,10 +201,41 @@ jobs:
           docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
             $(printf 'seppaleinen/worldinmovies_tmdb@sha256:%s ' *)
 
+  merge-webapp-manifest:
+    name: Merge multi-arch webapp manifest
+    runs-on: ubuntu-latest
+    needs: [build-webapp]
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests-webapp
+          pattern: digests-webapp-*
+          merge-multiple: true
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: seppaleinen/worldinmovies_webapp
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD}}
+      - name: Create manifest list and push
+        working-directory: /tmp/digests-webapp
+        run: |
+          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf 'seppaleinen/worldinmovies_webapp@sha256:%s ' *)
+
   integration-test:
     name: Integration tests
     runs-on: ubuntu-latest
-    needs: [backend-test]
+    needs: [merge-tmdb-manifest, merge-webapp-manifest]
     steps:
     - uses: actions/checkout@v4
     - name: Install pnpm
