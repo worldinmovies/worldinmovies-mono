@@ -1,0 +1,54 @@
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Dependencies
+node_modules/
+.pnpm-store/
+services/tmdb/.venv/
+
+# Build outputs
+dist/
+build/
+coverage/
+test-results/
+playwright-report/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+
+# Environment
+.env
+.env.local
+
+# Trunk
+.trunk/
+
+# TypeScript
+*.tsbuildinfo
+
+# turbo
+.turbo/
+
+# docker
+docker-compose*.yml
+persistent-data/
+datasubset/
+
+# mobile
+apps/webapp/android/
+apps/webapp/ios/
+
+# python cache
+__pycache__/
+*.pyc
+services/tmdb/db.sqlite3
+
+# test data large assets
+services/tmdb/testdata/*.gz

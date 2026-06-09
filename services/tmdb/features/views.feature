@@ -5,20 +5,21 @@ Feature: Views
 
   Scenario Outline: View Best Endpoint
     Given movies from file:<file> is persisted
+    And discovery is populated from persisted movies
     When calling <url>
     Then response should contain "<expected>"
 
     Examples: /view/best endpoint
-      | file                 | url           | expected            |
-      | sjunde_inseglet.json | /view/best/SE | Det sjunde inseglet |
-      | 1398.json            | /view/best/SU | "title": "Stalker"  |
+      | file                 | url           | expected                         |
+      | sjunde_inseglet.json | /view/best/SE | Det sjunde inseglet              |
+      | 1398.json            | /view/best/SU | "imdb_id": "tt0079944"           |
 
     Examples: /view/random/best endpoint
       | file                 | url                 | expected            |
       | sjunde_inseglet.json | /view/random/best/0 | Det sjunde inseglet |
       | 1398.json            | /view/random/best/0 | tt0079944           |
 
-  Scenario Outline: View Best Endpoint
+  Scenario Outline: Movie Endpoint
     Given movies from file:<file> is persisted
     When calling <url>
     Then http status should be 200

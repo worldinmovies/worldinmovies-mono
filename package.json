@@ -8,14 +8,22 @@
     "test:e2e": "turbo run test --filter=@worldinmovies/e2e",
     "setup:backend": "cd services/tmdb && uv venv .venv --python 3.13 && uv pip install --prerelease=allow -r requirements.txt",
     "build": "turbo run build",
-    "build:docker:tmdb": "docker buildx build --platform linux/amd64,linux/arm64 -t seppaleinen/worldinmovies_tmdb:latest services/tmdb",
-    "build:docker:webapp": "docker buildx build --platform linux/amd64,linux/arm64 -t seppaleinen/worldinmovies_webapp:latest apps/webapp",
+    "build:docker:tmdb": "docker buildx build --platform linux/amd64,linux/arm64 -t seppaleinen/worldinmovies_tmdb:latest -f services/tmdb/Dockerfile .",
+    "build:docker:webapp": "docker buildx build --platform linux/amd64,linux/arm64 -t seppaleinen/worldinmovies_webapp:latest -f apps/webapp/Dockerfile .",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
-    "typecheck": "turbo run typecheck"
+    "typecheck": "turbo run typecheck",
+    "prepare": "husky"
   },
   "devDependencies": {
-    "turbo": "^2.5.0"
+    "turbo": "^2.5.0",
+    "husky": "^9.0.0",
+    "lint-staged": "^17.0.7"
+  },
+  "lint-staged": {
+    "apps/webapp/src/**/*.{ts,tsx}": [
+      "apps/webapp/node_modules/.bin/eslint --fix"
+    ]
   },
   "packageManager": "pnpm@11.4.0"
 }
