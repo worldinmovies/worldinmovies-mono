@@ -11,26 +11,16 @@
 | **CI: backend-test** | Python 3.12, pip install, `python manage.py behave` |
 | **CI: build-tmdb** | Multi-arch (amd64 + arm64), push by digest, inline cache |
 | **CI: merge-tmdb-manifest** | Merge amd64 + arm64 into multi-arch `:latest` |
+| **CI: build-webapp** | Multi-arch (amd64 + arm64), push by digest, inline cache |
+| **CI: merge-webapp-manifest** | Merge amd64 + arm64 into multi-arch `:latest` |
+| **CI: integration-test chain** | Waits for both manifest merges before running, tests freshly built images |
 | **Dockerfiles** | Both use root build context for pnpm monorepo compatibility |
 | **Pre-commit hooks** | husky v9 + lint-staged → eslint --fix on staged .ts/.tsx |
+| **Auto-dependency updates** | Renovate configured (weekly schedule, auto-merge minor/patch, separate for frontend/backend/CI/docker) |
 
 ## 🔴 Remaining Gaps
 
-### 1. integration-test job uses stale Docker images
-- **Problem**: The job has `needs: [backend-test]` but should wait for `merge-tmdb-manifest` so it tests the newly built image, not whatever `:latest` was on Docker Hub before the push
-- **Fix**: Change dependency chain to `needs: [merge-tmdb-manifest]`
-
-### 2. No webapp Docker build in CI
-- **Problem**: `docker-compose.yml` references `seppaleinen/worldinmovies_webapp:latest` but CI never builds or pushes this image. Must be built locally with `pnpm build:docker:webapp`
-- **Fix**: Add `build-webapp` CI job (parallel to `build-tmdb`), and make `integration-test` depend on both manifest jobs
-
-### 3. `.dockerignore` may exclude test data needed for CI backend tests
-- **Problem**: `.dockerignore` includes `services/tmdb/testdata/*.gz` — this is correct for Docker builds (test data isn't needed in production image), but the CI `integration-test` job copies `datasubset/*.json` directly, so no impact there
-- **Status**: Not a real blocker, but worth noting the pattern
-
-### 4. No auto-dependency update tooling
-- **Problem**: No Renovate or Dependabot config. pnpm-lock.yaml is manually updated
-- **Fix**: Add `renovate.json` or `.github/dependabot.yml`
+No critical gaps remaining.
 
 ## 🟡 Optional Improvements
 
