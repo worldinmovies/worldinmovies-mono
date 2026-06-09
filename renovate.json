@@ -1,0 +1,89 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":separateMultipleMajorReleases",
+    ":combinePatchMinorUpdates",
+    ":disableDependencyDashboard"
+  ],
+  "labels": ["dependencies"],
+  "packageRules": [
+    {
+      "description": "Frontend dependencies (webapp workspace)",
+      "matchFileNames": ["apps/webapp/package.json"],
+      "addLabels": ["frontend"],
+      "groupName": "frontend dependencies",
+      "automerge": true,
+      "automergeType": "pr",
+      "schedule": ["before 9am on Monday"]
+    },
+    {
+      "description": "Backend Python dependencies",
+      "matchFileNames": ["services/tmdb/requirements.txt"],
+      "addLabels": ["backend"],
+      "groupName": "backend dependencies",
+      "automerge": false,
+      "schedule": ["before 9am on Monday"]
+    },
+    {
+      "description": "Dev dependencies (all workspaces)",
+      "matchDepTypes": ["devDependencies"],
+      "automerge": true,
+      "automergeType": "pr",
+      "groupName": "dev dependencies"
+    },
+    {
+      "description": "Test infrastructure dependencies",
+      "matchFileNames": ["apps/webapp/package.json"],
+      "matchDepTypes": ["devDependencies"],
+      "matchPackageNames": ["vitest", "@testing-library/*", "jsdom"],
+      "groupName": "test infrastructure",
+      "automerge": true,
+      "automergeType": "pr"
+    },
+    {
+      "description": "Docker dependencies",
+      "matchFileNames": ["apps/webapp/Dockerfile", "services/tmdb/Dockerfile"],
+      "addLabels": ["docker"],
+      "schedule": ["before 9am on Monday"]
+    },
+    {
+      "description": "GitHub Actions",
+      "matchManagers": ["github-actions"],
+      "addLabels": ["ci"],
+      "groupName": "CI dependencies",
+      "automerge": true,
+      "automergeType": "pr"
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "labels": ["security"],
+    "automerge": true,
+    "automergeType": "pr"
+  },
+  "major": {
+    "automerge": false
+  },
+  "minor": {
+    "automerge": true,
+    "automergeType": "pr",
+    "groupName": "all non-major dependencies",
+    "groupSlug": "all-minor-patch"
+  },
+  "patch": {
+    "automerge": true,
+    "automergeType": "pr",
+    "enabled": true
+  },
+  "lockFileMaintenance": {
+    "enabled": true,
+    "automerge": true,
+    "automergeType": "pr",
+    "schedule": ["before 9am on Monday"]
+  },
+  "prHourlyLimit": 2,
+  "prConcurrentLimit": 5,
+  "rangeStrategy": "bump",
+  "rebaseWhen": "conflicted",
+  "separateMinorPatch": true
+}
