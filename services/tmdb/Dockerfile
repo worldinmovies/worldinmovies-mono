@@ -10,7 +10,7 @@ RUN \
  apk add --no-cache tzdata  && \
  apk add --no-cache --virtual .build-deps gcc libffi-dev g++ snappy-dev krb5-pkinit krb5-dev krb5
 
-COPY requirements.txt .
+COPY services/tmdb/requirements.txt .
 
 RUN pip install --prefix=/install --no-cache-dir -r requirements.txt && \
     apk --purge del .build-deps
@@ -26,11 +26,11 @@ ENV PYTHONDONTWRITEBYTECODE=1
 COPY --from=builder /install /usr/local
 RUN apk --no-cache add libpq curl
 
-COPY .. /app
+COPY . /app
 
-WORKDIR /app
+WORKDIR /app/services/tmdb
 
 # Create SQLite database file with proper permissions
-RUN touch /app/db.sqlite3 && chmod 666 /app/db.sqlite3
+RUN touch /app/services/tmdb/db.sqlite3 && chmod 666 /app/services/tmdb/db.sqlite3
 
 ENTRYPOINT ["/bin/sh", "-c", "python manage.py migrate --noinput && python manage.py crontab add && crond & hypercorn --config=gunicorn.config.py settings.asgi:application"]
