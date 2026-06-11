@@ -1,29 +1,19 @@
-# Node Integration Tests
+# E2E Integration Tests
 
-### Cypress
+Requires docker-compose stack running. Start with `pnpm e2e:up`.
+
+### Playwright (default)
 ```
-# To open cypress GUI
-npm run cypress:open
-# To run tests headless
-npm run cypress:test
-```
+# Install browsers (chromium for CI)
+pnpm playwright install chromium
 
-### Playwright
-```
-# To install prerequisites
-npx playwright install
-
-npm run playwright:open
-npm run playwright:test
-
-# Or
-npx playwright test --ui
-npx playwright test
+# Run tests
+pnpm e2e:test      # headless run
+pnpm e2e:ui        # UI mode
 ```
 
-
-### Artillery
+### Artillery (load testing)
 
 ```
-npm run artillery:run
+pnpm artillery:run
 ```
