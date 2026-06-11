@@ -249,18 +249,20 @@ jobs:
         cache: 'pnpm'
     - name: Install dependencies
       run: pnpm install --frozen-lockfile --filter @worldinmovies/e2e
+    - name: Install Playwright browsers
+      run: pnpm --filter @worldinmovies/e2e exec playwright install chromium
     - name: Start containers and run integration tests
       working-directory: tests/e2e
       run: |
         echo "VITE_WEBAPP_PORT=80" > .env
         echo "DJANGO_SECRET_KEY="$(uuidgen) >> .env
         docker compose up -d || docker compose up -d
-        docker cp datasubset/tmdb.movie.json mongo:/
-        docker cp datasubset/tmdb.flattened_movie.json mongo:/
-        ./wait_until_running.sh
-        docker exec mongo mongoimport -u seppa -p password -d tmdb -c movie --mode upsert --jsonArray --type json --file tmdb.movie.json
-        docker exec mongo mongoimport -u seppa -p password -d tmdb -c movie --mode upsert --jsonArray --type json --file tmdb.flattened_movie.json
-        pnpm run cypress:test
+          docker cp datasubset/tmdb.movie.json mongo:/
+          docker cp datasubset/tmdb.flattened_movie.json mongo:/
+          ./wait_until_running.sh
+          docker exec mongo mongoimport -u seppa -p password -d tmdb -c movie --mode upsert --jsonArray --type json --file tmdb.movie.json
+          docker exec mongo mongoimport -u seppa -p password -d tmdb -c movie --mode upsert --jsonArray --type json --file tmdb.flattened_movie.json
+          pnpm e2e:test
     - name: Check errors
       if: ${{ failure() }}
       working-directory: tests/e2e
