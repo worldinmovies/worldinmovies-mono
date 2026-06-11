@@ -26,11 +26,11 @@ ENV PYTHONDONTWRITEBYTECODE=1
 COPY --from=builder /install /usr/local
 RUN apk --no-cache add libpq curl
 
-COPY . /app
+COPY services/tmdb/ /app/services/tmdb/
 
 WORKDIR /app/services/tmdb
 
 # Create SQLite database file with proper permissions
-RUN touch /app/services/tmdb/db.sqlite3 && chmod 666 /app/services/tmdb/db.sqlite3
+RUN touch db.sqlite3 && chmod 666 db.sqlite3
 
 ENTRYPOINT ["/bin/sh", "-c", "python manage.py migrate --noinput && python manage.py crontab add && crond & hypercorn --config=gunicorn.config.py settings.asgi:application"]
