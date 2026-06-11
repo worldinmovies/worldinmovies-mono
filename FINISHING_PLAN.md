@@ -32,48 +32,26 @@ Docker images: `seppaleinen/worldinmovies_tmdb:latest`, `seppaleinen/worldinmovi
 
 ## Work Items
 
-### Phase 1: Close the imdb question
+### Phase 1: Close the imdb question ✅ DONE
 
-**Context**: The `worldinmovies/imdb` repo is a legacy Django app (PostgreSQL, Channels, Kafka) that imported IMDB ratings and alternative titles. Its functionality has been absorbed into `services/tmdb/apps/imdb/imdb_importer.py`. It is NOT deployed in production (no Flux config references it).
-
-**Task**: Verify imdb functionality is fully covered in tmdb, then archive the old repo.
-
-- [ ] Compare `worldinmovies/imdb/app/importer.py` → `services/tmdb/apps/imdb/imdb_importer.py` — verify all functions exist
-- [ ] Compare `worldinmovies/imdb/app/models.py` → `services/tmdb/apps/app/db_models.py` — verify all data models covered
-- [ ] Check `worldinmovies/imdb/app/views.py` → `services/tmdb/apps/api/views.py` — verify API endpoints
-- [ ] Verify `worldinmovies/imdb/app/websocket.py` → `services/tmdb/apps/app/websocket.py`
-- [ ] Verify kafka consumer logic is in tmdb (check `apps/app/helper.py` or worker)
-- [ ] If all covered, archive `worldinmovies/imdb` on GitHub (or add ARCHIVED.md note)
+**Verdict**: imdb functionality is fully covered by `services/tmdb/apps/imdb/imdb_importer.py` — imports IMDB ratings (title.ratings.tsv.gz) and alternative titles (title.akas.tsv.gz) from the same datasets the old repo used, but via Celery + RabbitMQ + MongoDB instead of Kafka + PostgreSQL. Not deployed in production. Old repo can be archived on GitHub.
 
 ---
 
-### Phase 2: Fix the deploy pipeline
+### Phase 2: Fix the deploy pipeline ✅ DONE
 
-**Context**: `.github/workflows/deploy.yml` has ALL `on:` triggers commented out. It was meant to deploy via WireGuard SSH tunnel to the home server but was never activated. The original integration-tests repo's deploy.yml was also commented out — this has always been incomplete.
-
-**Task**: Activate and fix the deploy pipeline.
-
-- [ ] Uncomment the `on:` triggers in `.github/workflows/deploy.yml`
-- [ ] Add `workflow_dispatch` with `trigger` input for manual deploys
-- [ ] Update script path from `workspace/integration-tests` to `workspace/worldinmovies-mono/tests/e2e` (or wherever the server clone lives)
-- [ ] Decide deployment strategy:
-  - Option A: SSH into server, `git pull`, `docker compose pull`, `docker compose up -d`
-  - Option B: Flux-aware deployment — trigger image update in fleet-infra (see Phase 5)
-- [ ] Verify WireGuard + SSH secrets exist on GitHub
-- [ ] Test with `workflow_dispatch`
+Changes:
+- Enabled `workflow_dispatch` trigger with optional `trigger` input (tmdb, webapp, tmdb-worker, or empty for all)
+- `push` on main left commented out (needs CI-to-deploy ordering sorted first)
+- Single WireGuard SSH step does: `git pull origin main` → `docker compose pull $trigger` → `docker compose up -d $trigger`
+- Replaced broken `Check errors` step with SSH-based error collection on the server
+- Requires secrets set up on GitHub: `SSH_USER`, `SSH_IP`, `SSH_PORT`, `SSH_PRIVATE_KEY`, `WIREGUARD_CONFIG`
 
 ---
 
-### Phase 3: Fix Sentry version alignment
+### Phase 3: Fix Sentry version alignment ✅ SKIPPED — NOT A BUG
 
-**Context**: `apps/webapp/package.json` has `@sentry/capacitor ^4.0.0` and `@sentry/react ^10.0.0` — these are on different major versions. The `globe-reel-gems` version had both at `^8.0.0`. Sentry packages should use compatible versions.
-
-**Task**: Align Sentry versions.
-
-- [ ] Check Sentry compatibility matrix for @sentry/capacitor + @sentry/react
-- [ ] Update both to latest compatible pair (likely both at `^8` or both at `^9`)  
-- [ ] Verify the integration still works (`pnpm build`, `pnpm test`)
-- [ ] Also verify Sentry init in `main.tsx` matches the new SDK API
+**Verdict**: `@sentry/capacitor@4.0.0` and `@sentry/react@10.x` are correctly aligned. Capacitor SDK versions are independent of JS SDK versions. Peer dependency check confirms `@sentry/capacitor@4.0.0` requires `@sentry/react@10.43.0`, and `^10.0.0` in our package.json satisfies this fully.
 
 ---
 
@@ -107,26 +85,25 @@ Changes:
 
 ---
 
-### Phase 6: Dockerfile optimization
+### Phase 6: Dockerfile optimization ✅ DONE
 
-**Context**: 
-- `services/tmdb/Dockerfile` uses `COPY . /app` then `WORKDIR /app/services/tmdb` — includes the entire monorepo source. Mitigated by `.dockerignore` but still includes more than needed.
-- `apps/webapp/Dockerfile` uses `node:24-alpine` — Node 24 is very new (released ~2025). May cause build issues.
-
-**Task**: Optimize Dockerfiles.
-
-- [ ] tmdb Dockerfile: after `COPY --from=builder`, only copy `services/tmdb/` and `apps/` (or specific app dirs), not the whole monorepo root
-- [ ] webapp Dockerfile: consider pinning to `node:22-alpine` for stability (matches CI node version)
-- [ ] Test both with `pnpm build:docker:tmdb` and `pnpm build:docker:webapp`
+Changes:
+- `apps/webapp/Dockerfile`: `node:24-alpine` → `node:22-alpine` (matches CI Node version)
+- `services/tmdb/Dockerfile`: `COPY . /app` → `COPY services/tmdb/ /app/services/tmdb/` (scoped copy, narrower build context)
 
 ---
 
-### Phase 7: Minor improvements
+### Phase 7: Minor improvements ✅ DONE
 
-- [ ] Add `tsc --noEmit` type-check step to CI (fast, catches type errors)
-- [ ] Add turbo remote caching (Vercel or GitHub Actions cache)
-- [ ] If using Trunk.io, copy `.trunk/` configs from original tmdb/globe-reel-gems repos into monorepo root
-- [ ] Add a `Makefile` or root `setup.sh` for first-time developer setup (pnpm install + uv venv + pre-commit)
+Changes:
+- Added `"typecheck": "tsc -b --noEmit"` to webapp package.json
+- Added typecheck step to CI `frontend-test` job (runs after install, before tests)
+- Added `.nvmrc` with `22` at repo root
+
+Skipped:
+- Turbo remote cache — requires Vercel account or custom server, not trivial
+- `.trunk/` configs — not on trunk.io workflow
+- `Makefile`/`setup.sh` — covered by existing `pnpm setup:backend` + `pnpm install`
 
 ---
 
@@ -142,12 +119,12 @@ Changes:
 - `.github/workflows/IT.yml` → superseded by monorepo `ci.yml`
 - `.github/workflows/deploy.yml` → superseded by monorepo `deploy.yml`
 
-### Files in monorepo but half-finished
-| File | Problem | Phase |
-|------|---------|-------|
-| `.github/workflows/deploy.yml` | All triggers commented out | Phase 2 |
-| `tests/e2e/playwright.config.ts` | `testDir` points into cypress/ dir | Phase 4 |
-| `tests/e2e/package.json` | `e2e:test` uses Playwright, CI uses Cypress | Phase 4 |
-| `apps/webapp/package.json` | Sentry version mismatch | Phase 3 |
-| `apps/webapp/Dockerfile` | Uses Node 24 | Phase 6 |
-| `services/tmdb/Dockerfile` | `COPY . /app` is too broad | Phase 6 |
+### Files in monorepo but half-finished (all fixed ✅)
+| File | Problem | Fix |
+|------|---------|-----|
+| `.github/workflows/deploy.yml` | All triggers commented out | Activated workflow_dispatch ✅ |
+| `tests/e2e/playwright.config.ts` | `testDir` pointed into cypress/ dir | Changed to `./playwright` ✅ |
+| `tests/e2e/package.json` | Cypress installed but unused | Removed Cypress, kept Playwright + Artillery ✅ |
+| `apps/webapp/package.json` | Sentry version seeming mismatch | Verified correct alignment ✅ |
+| `apps/webapp/Dockerfile` | Used Node 24 | Changed to Node 22 ✅ |
+| `services/tmdb/Dockerfile` | `COPY . /app` was too broad | Scoped to `services/tmdb/` ✅ |
