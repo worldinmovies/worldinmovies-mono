@@ -6,7 +6,7 @@ allowBuilds:
   '@playwright/browser-chromium': true
   '@sentry/capacitor': true
   '@swc/core': true
-  cypress: true
+  cypress: set this to true or false
   esbuild: true
   protobufjs: true
   unix-dgram: true
