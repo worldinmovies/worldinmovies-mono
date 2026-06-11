@@ -2,9 +2,69 @@
 
 Monorepo for World in Movies — discover top-ranked films from every country.
 
-## Structure
+## 🏗️ Architecture & Overview
 
+A multi-platform movie discovery engine.
+
+- **Frontend**: React (Vite) with `@capacitor` for mobile/native cross-platform consistency.
+- **Backend**: Django (Python) with `hypercorn` (ASGI), `Celery` for tasks, and `MongoDB` for high-volume movie data.
+- **Orchestration**: `pnpm` workspaces + `TurboRepo` for high-performance parallel execution.
+- **E2E Testing**: Single-runner architecture using **Playwright** (Integrated) and **Artillery** (Load Testing).
+
+## 🚀 Quick Start
+
+### Prerequisites
+- **Node.js 22** (via `.nvmrc`)
+- **pnpm >= 11**
+- **Python 3.13** (via `uv`)
+- **Docker** (for integration tests)
+
+### Development & Testing
+```bash
+# Install dependencies
+pnpm install
+
+# Run all tests (frontend vitest + backend behave + playwright) in parallel
+pnpm test
+
+# Run frontend typecheck
+pnpm --filter @worldinmovies/webapp typecheck
+
+# Run individual suites
+pnpm test:frontend  # Vitest
+pnpm test:backend   # Behave
+pnpm test:e2e       # Playwright
 ```
+
+### Backend & Frontend Dev Servers
+```bash
+# Backend (requires MongoDB local)
+cd services/tmdb
+pnpm setup:backend && python manage.py runserver
+
+# Frontend
+cd apps/webapp
+pnpm dev
+```
+
+## 📦 Docker & Deployment
+
+### Builds
+```bash
+# Build and push multi-arch images
+pnpm build:docker:tmdb
+pnpm build:docker:webapp
+```
+
+### Deployment (Manual)
+Deployment is managed via GitHub Actions using a WireGuard SSH tunnel to the home server.
+Use the `deploy` workflow with the `trigger` input to specify which service to update:
+`tmdb`, `webapp`, `tmdb-worker`, or (empty) for all.
+
+## 📚 Documentation
+- [AGENTS.md](./AGENTS.md) — Developer guidelines and architecture overview.
+- [FINISHING_PLAN.md](./FINISHING_PLAN.md) — Roadmap and historical context.
+
 apps/webapp/       React frontend (Vite + Capacitor)
 services/tmdb/     Django backend (Celery + MongoDB + Meilisearch)
 tests/e2e/         E2E tests (Playwright, Cypress, Artillery) + Docker Compose infra
