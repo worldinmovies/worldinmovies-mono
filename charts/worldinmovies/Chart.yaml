@@ -1,0 +1,33 @@
+apiVersion: v2
+name: worldinmovies
+description: Umbrella chart for the World in Movies platform (API, worker, frontend)
+home: https://github.com/worldinmovies/worldinmovies-mono
+sources:
+  - https://github.com/worldinmovies/worldinmovies-mono
+type: application
+version: 0.1.0
+appVersion: latest
+
+dependencies:
+  # -- Application component charts (OCI from GHCR)
+  - name: tmdb
+    version: "0.2.1"
+    repository: "oci://ghcr.io/worldinmovies/charts"
+  - name: tmdb-worker
+    version: "0.2.1"
+    repository: "oci://ghcr.io/worldinmovies/charts"
+  - name: webapp
+    version: "0.2.2"
+    repository: "oci://ghcr.io/worldinmovies/charts"
+
+  # -- Optional bundled infrastructure
+  - name: mongodb
+    version: "18.7.1"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: mongodb.enabled
+    alias: mongodb
+  - name: rabbitmq
+    version: "16.0.14"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: rabbitmq.enabled
+    alias: rabbitmq
