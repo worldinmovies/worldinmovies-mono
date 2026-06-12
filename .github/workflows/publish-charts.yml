@@ -27,16 +27,18 @@ jobs:
           CHARTS=$(ls -d charts/*/)
           # If workflow_dispatch, publish all; otherwise filter by changed files
           if [[ "${{ github.event_name }}" != "push" ]]; then
-            MATRIX=$(echo "$CHARTS" | jq -R -s -c 'split("\n") | map(select(length > 0) | {chart: (. | split("/") | .[1])})')
+            CHART_NAMES=$(for dir in $CHARTS; do basename "$dir"; done)
           else
             CHANGED=$(git diff --name-only "${{ github.event.before }}".."${{ github.event.after }}" -- charts/)
-            MATRIX=$(for dir in $CHARTS; do
+            CHART_NAMES=$(for dir in $CHARTS; do
               name=$(basename "$dir")
               if echo "$CHANGED" | grep -q "^charts/$name/"; then
                 echo "$name"
               fi
-            done | jq -R -s -c 'split("\n") | map(select(length > 0) | {chart: .})')
+            done)
           fi
+          # Format as flat matrix object: {"chart": ["tmdb", "tmdb-worker", "webapp"]}
+          MATRIX=$(echo "$CHART_NAMES" | jq -R -s -c '{chart: split("\n") | map(select(length > 0))}')
           echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
           echo "Charts to publish: $MATRIX"
 
@@ -44,7 +46,6 @@ jobs:
     name: Publish ${{ matrix.chart }}
     runs-on: ubuntu-latest
     needs: [detect]
-    if: ${{ needs.detect.outputs.matrix != '[]' && needs.detect.outputs.matrix != '' }}
     strategy:
       matrix: ${{ fromJson(needs.detect.outputs.matrix) }}
       fail-fast: false
