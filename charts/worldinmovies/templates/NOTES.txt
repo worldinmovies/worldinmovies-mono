@@ -1,0 +1,11 @@
+🎬 World in Movies — deployed successfully!
+
+Access the webapp at: {{ .Values.webapp.ingress.host | default "http://localhost" }}
+
+API health: http://{{ .Release.Name }}-tmdb.{{ .Release.Namespace }}:8020/health/
+Worker: celery -A settings inspect ping -d celery@{{ .Release.Name }}-tmdb-worker
+
+To override any value, upgrade with --set:
+  helm upgrade worldinmovies ./charts/worldinmovies \
+    --set tmdb.image.tag=v1.2.3 \
+    --set webapp.ingress.host=movies.example.com

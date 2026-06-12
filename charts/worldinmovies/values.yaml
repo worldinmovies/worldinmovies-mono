@@ -1,0 +1,123 @@
+# =============================================================================
+# World in Movies — Umbrella Chart Values
+# =============================================================================
+# Install with bundled infra:
+#   helm install worldinmovies ./charts/worldinmovies \
+#     --set mongodb.enabled=true --set rabbitmq.enabled=true
+#
+# Install with existing infra (default):
+#   helm install worldinmovies ./charts/worldinmovies
+#   --set tmdb.external.mongoURL=...  (override if not default)
+# =============================================================================
+
+# -- Optional: bundle MongoDB via Bitnami sub-chart.
+# When enabled, external.mongoURL should point to:
+#   {release}-mongodb.{namespace}.svc.cluster.local
+mongodb:
+  enabled: false
+  architecture: standalone
+  persistence:
+    size: 8Gi
+  resources:
+    requests:
+      cpu: 250m
+      memory: 4Gi
+
+# -- Optional: bundle RabbitMQ via Bitnami sub-chart.
+# When enabled, external.rabbitmqURL should point to:
+#   {release}-rabbitmq.{namespace}.svc.cluster.local
+rabbitmq:
+  enabled: false
+  persistence:
+    size: 2Gi
+  resources:
+    requests:
+      cpu: 250m
+      memory: 196Mi
+
+# =============================================================================
+# Sub-chart values (each key maps to the corresponding sub-chart's values.yaml)
+# =============================================================================
+
+tmdb:
+  mongodb:
+    enabled: false    # handled at umbrella level
+  rabbitmq:
+    enabled: false    # handled at umbrella level
+  external:
+    # When mongodb.enabled is true at umbrella level, point here:
+    mongoURL: mongodb.worldinmovies.svc.cluster.local
+    rabbitmqURL: rabbitmq.worldinmovies.svc.cluster.local
+  image:
+    repository: seppaleinen/worldinmovies_tmdb
+    tag: latest
+    pullPolicy: Always
+  service:
+    port: 8020
+  resources:
+    requests:
+      cpu: 15m
+      memory: 250Mi
+  envs:
+    - name: TZ
+      value: Europe/Stockholm
+    - name: REDIS_URL
+      value: dragonfly.dragonfly.svc.cluster.local
+    - name: MEILISEARCH_URL
+      value: http://meilisearch.worldinmovies.svc.cluster.local:7700
+  secrets:
+    DJANGO_SECRET_KEY: "REPLACE_ME"
+    TMDB_API_KEY: "REPLACE_ME"
+    SENTRY_DSN: "REPLACE_ME"
+
+tmdb-worker:
+  mongodb:
+    enabled: false    # handled at umbrella level
+  rabbitmq:
+    enabled: false    # handled at umbrella level
+  external:
+    mongoURL: mongodb.worldinmovies.svc.cluster.local
+    rabbitmqURL: rabbitmq.worldinmovies.svc.cluster.local
+  image:
+    repository: seppaleinen/worldinmovies_tmdb
+    tag: latest
+    pullPolicy: Always
+  resources:
+    requests:
+      cpu: 15m
+      memory: 400Mi
+  envs:
+    - name: TZ
+      value: Europe/Stockholm
+    - name: REDIS_URL
+      value: dragonfly.dragonfly.svc.cluster.local
+    - name: MEILISEARCH_URL
+      value: http://meilisearch.worldinmovies.svc.cluster.local:7700
+  secrets:
+    DJANGO_SECRET_KEY: "REPLACE_ME"
+    TMDB_API_KEY: "REPLACE_ME"
+    SENTRY_DSN: "REPLACE_ME"
+
+webapp:
+  image:
+    repository: seppaleinen/worldinmovies_webapp
+    tag: latest
+  service:
+    port: 80
+  resources:
+    requests:
+      cpu: 15m
+      memory: 128Mi
+  ingress:
+    host: worldinmovies.labb.site
+  env:
+    - name: TZ
+      value: Europe/Stockholm
+    - name: VITE_WEBAPP_PORT
+      value: "80"
+    - name: VITE_TMDB_URL
+      value: ""
+    - name: TMDB_UPSTREAM
+      value: tmdb.worldinmovies.svc.cluster.local:8020
+  secrets:
+    SENTRY_DSN: "REPLACE_ME"
