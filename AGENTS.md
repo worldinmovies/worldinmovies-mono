@@ -47,8 +47,20 @@ Helm charts live under `charts/` in the monorepo root:
 | `charts/tmdb/` | Django API backend | MongoDB (optional), RabbitMQ (optional) |
 | `charts/tmdb-worker/` | Celery worker | MongoDB (optional), RabbitMQ (optional) |
 | `charts/webapp/` | React frontend | None |
+| `charts/worldinmovies/` | **Umbrella chart** (bundles all 3 + optional infra) | tmdb, tmdb-worker, webapp, MongoDB (optional), RabbitMQ (optional) |
 
-Charts are published to `ghcr.io/worldinmovies/charts` as OCI artifacts on every push to `main` that changes `charts/**`.
+The umbrella chart provides a single `helm install` command for the full stack:
+
+```bash
+# With bundled infra:
+helm install worldinmovies ./charts/worldinmovies \
+  --set mongodb.enabled=true --set rabbitmq.enabled=true
+
+# With existing infra (default):
+helm install worldinmovies ./charts/worldinmovies
+```
+
+Component charts are published to `ghcr.io/worldinmovies/charts` as OCI artifacts on every push to `main` that changes `charts/**`. The umbrella chart is not published via CI (it's designed for local deployment from the monorepo or a `file://` reference).
 
 **Versioning**: Auto-bumped from conventional commit messages (`BREAKING CHANGE` → major, `feat:` → minor, else → patch). Each chart maintains an independent semver. Chart release tags follow `helm/{name}-X.Y.Z`.
 
