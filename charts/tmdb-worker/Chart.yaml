@@ -1,0 +1,21 @@
+apiVersion: v2
+name: tmdb-worker
+description: A Helm chart for the TMDB Celery worker
+home: https://github.com/worldinmovies/worldinmovies-mono
+sources:
+  - https://github.com/worldinmovies/worldinmovies-mono
+type: application
+version: 0.2.0
+appVersion: latest
+
+dependencies:
+  - name: mongodb
+    version: "18.7.1"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: mongodb.enabled
+    alias: mongodb
+  - name: rabbitmq
+    version: "16.0.14"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: rabbitmq.enabled
+    alias: rabbitmq
