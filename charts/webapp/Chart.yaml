@@ -1,0 +1,9 @@
+apiVersion: v2
+name: webapp
+description: A Helm chart for the worldinmovies React frontend
+home: https://github.com/worldinmovies/worldinmovies-mono
+sources:
+  - https://github.com/worldinmovies/worldinmovies-mono
+type: application
+version: 0.2.0
+appVersion: latest

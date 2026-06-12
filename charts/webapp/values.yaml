@@ -1,0 +1,34 @@
+# -- Image configuration (overridden by CI/CD at deploy time).
+image:
+  repository: seppaleinen/worldinmovies_webapp
+  tag: latest
+
+# -- Service configuration.
+service:
+  port: 80
+
+# -- Resource requests.
+resources:
+  requests:
+    cpu: 15m
+    memory: 128Mi
+
+# -- Ingress configuration.
+ingress:
+  host: worldinmovies.labb.site
+
+# -- Static environment variables.
+env:
+  - name: TZ
+    value: Europe/Stockholm
+  - name: VITE_WEBAPP_PORT
+    value: "80"
+  - name: VITE_TMDB_URL
+    value: ""
+  - name: TMDB_UPSTREAM
+    value: tmdb.worldinmovies.svc.cluster.local:8020
+
+# -- Secrets (provide real values at install/upgrade time).
+# -- These are rendered as a Kubernetes Secret by the environment-secrets template.
+secrets:
+  SENTRY_DSN: "REPLACE_ME"

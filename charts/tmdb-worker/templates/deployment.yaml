@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    app: {{ .Release.Name }}
+    name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 0
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      name: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        name: {{ .Release.Name }}
+    spec:
+      securityContext:
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+      initContainers:
+        - name: copy-app
+          image: {{ printf "%s:%s" .Values.image.repository .Values.image.tag }}
+          command: ["sh", "-c", "cp -a /app/. /app-writable/ && chown -R 999:999 /app-writable"]
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+          volumeMounts:
+            - name: app-writable
+              mountPath: /app-writable
+      containers:
+        - name: {{ .Release.Name }}
+          command:
+            - celery
+            - -A
+            - settings
+            - worker
+            - -l
+            - info
+          image: {{ printf "%s:%s" .Values.image.repository .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            {{- toYaml .Values.envs | nindent 12 }}
+            - name: MONGO_URL
+              value: {{ if .Values.mongodb.enabled }}{{ printf "%s-mongodb.%s.svc.cluster.local" .Release.Name .Release.Namespace }}{{ else }}{{ .Values.external.mongoURL }}{{ end }}
+            - name: RABBITMQ_URL
+              value: {{ if .Values.rabbitmq.enabled }}{{ printf "%s-rabbitmq.%s.svc.cluster.local" .Release.Name .Release.Namespace }}{{ else }}{{ .Values.external.rabbitmqURL }}{{ end }}
+          envFrom:
+            - secretRef:
+                name: {{ printf "%s-env-secrets" .Release.Name }}
+          # celery -A settings inspect ping -d celery@$HOSTNAME
+          resources:
+            {{ toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: app-writable
+              mountPath: /app
+      volumes:
+        - name: app-writable
+          emptyDir: {}
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              name: {{ .Release.Name }}
+      restartPolicy: Always
