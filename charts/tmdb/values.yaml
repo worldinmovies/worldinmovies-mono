@@ -1,0 +1,60 @@
+# -- Optional: bundle MongoDB via Bitnami sub-chart.
+# Disable (default) to use an existing MongoDB instance via external.mongoURL.
+mongodb:
+  enabled: false
+  architecture: standalone
+  persistence:
+    size: 8Gi
+  resources:
+    requests:
+      cpu: 250m
+      memory: 4Gi
+
+# -- Optional: bundle RabbitMQ via Bitnami sub-chart.
+# Disable (default) to use an existing instance via external.rabbitmqURL.
+rabbitmq:
+  enabled: false
+  persistence:
+    size: 2Gi
+  resources:
+    requests:
+      cpu: 250m
+      memory: 196Mi
+
+# -- External service endpoints (used when sub-charts are disabled).
+external:
+  mongoURL: mongodb.worldinmovies.svc.cluster.local
+  rabbitmqURL: rabbitmq.worldinmovies.svc.cluster.local
+
+# -- Image configuration (overridden by CI/CD at deploy time).
+image:
+  repository: seppaleinen/worldinmovies_tmdb
+  tag: latest
+  pullPolicy: Always
+
+# -- Service configuration.
+service:
+  port: 8020
+
+# -- Resource requests.
+resources:
+  requests:
+    cpu: 15m
+    memory: 250Mi
+
+# -- Static environment variables (MONGO_URL and RABBITMQ_URL are set
+# -- dynamically by the template, not here).
+envs:
+  - name: TZ
+    value: Europe/Stockholm
+  - name: REDIS_URL
+    value: dragonfly.dragonfly.svc.cluster.local
+  - name: MEILISEARCH_URL
+    value: http://meilisearch.worldinmovies.svc.cluster.local:7700
+
+# -- Secrets (provide real values at install/upgrade time).
+# -- These are rendered as a Kubernetes Secret by the environment-secrets template.
+secrets:
+  DJANGO_SECRET_KEY: "REPLACE_ME"
+  TMDB_API_KEY: "REPLACE_ME"
+  SENTRY_DSN: "REPLACE_ME"

@@ -35,7 +35,26 @@ This document contains instructions for agents (AI and human) working on the `wo
   - `backend-test`: Django Behave (Python 3.12/3.13)
   - `integration-test`: Docker-based Playwright suite
   - `build-*`: Multi-arch (amd64/arm64) Docker builds
+  - `publish-charts`: Packages and publishes Helm charts to `ghcr.io/worldinmovies/charts` on push to `main` with `charts/**` changes
 - **Deployment**: Manual deployment via `workflow_dispatch` in `.github/workflows/deploy.yml`. Uses WireGuard SSH tunnel to the home server for `git pull` and `docker compose up`.
+
+## 🎨 Helm Charts
+
+Helm charts live under `charts/` in the monorepo root:
+
+| Chart | Description | Sub-chart deps |
+|-------|-------------|----------------|
+| `charts/tmdb/` | Django API backend | MongoDB (optional), RabbitMQ (optional) |
+| `charts/tmdb-worker/` | Celery worker | MongoDB (optional), RabbitMQ (optional) |
+| `charts/webapp/` | React frontend | None |
+
+Charts are published to `ghcr.io/worldinmovies/charts` as OCI artifacts on every push to `main` that changes `charts/**`.
+
+**Versioning**: Auto-bumped from conventional commit messages (`BREAKING CHANGE` → major, `feat:` → minor, else → patch). Each chart maintains an independent semver. Chart release tags follow `helm/{name}-X.Y.Z`.
+
+**Dependencies**: MongoDB and RabbitMQ can be bundled as sub-charts (set `mongodb.enabled=true` / `rabbitmq.enabled=true`) or pointed to existing instances via `external.mongoURL` / `external.rabbitmqURL` (default).
+
+**Secrets**: Placeholder values in chart `values.yaml` (e.g., `REPLACE_ME`). Real secrets are supplied at install/upgrade time via `--set` or `valuesFrom`. SOPS-encrypted production secrets live in fleet-infra.
 
 ## ⚠️ Critical Constraints
 

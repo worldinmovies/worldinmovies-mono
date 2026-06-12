@@ -41,3 +41,7 @@ playwright-report/
 
 # turbo build cache and logs
 .turbo/
+
+# Helm sub-chart tarballs (downloaded by `helm dep update`)
+charts/*/charts/
+charts/*/Chart.lock
