@@ -39,6 +39,5 @@ playwright-report/
 # vitest temp files
 *.timestamp-*.mjs
 
-# turbo build cache
-.turbo/cache/
-.turbo/turbo-*.log
+# turbo build cache and logs
+.turbo/
