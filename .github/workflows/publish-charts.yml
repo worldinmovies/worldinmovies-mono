@@ -12,49 +12,12 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  detect:
-    name: Detect changed charts
-    runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - id: set-matrix
-        run: |
-          # Find all chart directories that have a Chart.yaml
-          CHARTS=$(ls -d charts/*/)
-          # If workflow_dispatch, publish all; otherwise filter by changed files
-          if [[ "${{ github.event_name }}" != "push" ]]; then
-            CHART_NAMES=$(for dir in $CHARTS; do basename "$dir"; done)
-          else
-            CHANGED=$(git diff --name-only "${{ github.event.before }}".."${{ github.event.after }}" -- charts/)
-            CHART_NAMES=$(for dir in $CHARTS; do
-              name=$(basename "$dir")
-              if echo "$CHANGED" | grep -q "^charts/$name/"; then
-                echo "$name"
-              fi
-            done)
-          fi
-          # Format as flat matrix object: {"chart": ["tmdb", "tmdb-worker", "webapp"]}
-          MATRIX=$(echo "$CHART_NAMES" | jq -R -s -c '{chart: split("\n") | map(select(length > 0))}')
-          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
-          echo "Charts to publish: $MATRIX"
-
   publish:
-    name: Publish ${{ matrix.chart }}
+    name: Publish Helm Charts
     runs-on: ubuntu-latest
-    needs: [detect]
-    strategy:
-      matrix: ${{ fromJson(needs.detect.outputs.matrix) }}
-      fail-fast: false
     permissions:
       contents: write
       packages: write
-    defaults:
-      run:
-        working-directory: charts/${{ matrix.chart }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -67,76 +30,116 @@ jobs:
       - name: Install yq
         uses: mikefarah/yq@v4.44.3
 
-      - name: Read current chart version
-        id: chart
+      - name: Determine charts to publish
+        id: charts
         run: |
-          echo "version=$(yq '.version' Chart.yaml)" >> "$GITHUB_OUTPUT"
-
-      - name: Lint chart
-        run: helm lint .
-
-      - name: Update dependencies
-        run: helm dependency update .
-
-      - name: Package chart
-        run: |
-          helm package . \
-            --version "${{ steps.chart.outputs.version }}" \
-            --app-version "${{ steps.chart.outputs.version }}" \
-            --destination /tmp/helm-packages
-
-      - name: Login to GHCR
-        if: ${{ github.ref == 'refs/heads/main' }}
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io \
-            --username "${{ github.actor }}" \
-            --password-stdin
-
-      - name: Push chart to GHCR
-        if: ${{ github.ref == 'refs/heads/main' }}
-        run: |
-          helm push "/tmp/helm-packages/${{ matrix.chart }}-${{ steps.chart.outputs.version }}.tgz" \
-            oci://ghcr.io/worldinmovies/charts
-
-      - name: Compute bump type
-        id: bump_type
-        run: |
-          MSG="${{ github.event.head_commit.message }}"
-          if echo "$MSG" | grep -q "BREAKING CHANGE"; then
-            echo "type=major" >> "$GITHUB_OUTPUT"
-          elif echo "$MSG" | grep -qiE "^feat(\(.+\))?:"; then
-            echo "type=minor" >> "$GITHUB_OUTPUT"
+          # Find all chart directories
+          ALL_CHARTS=$(ls -d charts/*/ | xargs -n1 basename)
+          if [[ "${{ github.event_name }}" != "push" ]]; then
+            # workflow_dispatch: publish all charts
+            CHART_LIST=$(echo "$ALL_CHARTS" | tr '\n' ' ')
           else
-            echo "type=patch" >> "$GITHUB_OUTPUT"
+            # push: only publish charts with changes
+            CHANGED=$(git diff --name-only "${{ github.event.before }}".."${{ github.event.after }}" -- charts/)
+            CHART_LIST=""
+            for name in $ALL_CHARTS; do
+              if echo "$CHANGED" | grep -q "^charts/$name/"; then
+                CHART_LIST+="$name "
+              fi
+            done
           fi
+          echo "list=$CHART_LIST" >> "$GITHUB_OUTPUT"
+          echo "Charts to publish: [$CHART_LIST]"
 
-      - name: Compute new version
-        id: bump
+      - name: Publish each chart
+        if: ${{ steps.charts.outputs.list != '' }}
+        shell: bash
         run: |
-          CURRENT="${{ steps.chart.outputs.version }}"
-          MAJOR=$(echo "$CURRENT" | cut -d. -f1)
-          MINOR=$(echo "$CURRENT" | cut -d. -f2)
-          PATCH=$(echo "$CURRENT" | cut -d. -f3)
-          case "${{ steps.bump_type.outputs.type }}" in
-            major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
-            minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
-            patch) PATCH=$((PATCH + 1)) ;;
-          esac
-          echo "version=${MAJOR}.${MINOR}.${PATCH}" >> "$GITHUB_OUTPUT"
+          set -euo pipefail
+          CHARTS="${{ steps.charts.outputs.list }}"
+          REPO_ROOT="${{ github.workspace }}"
 
-      - name: Bump chart version
-        run: |
-          yq -i ".version = \"${{ steps.bump.outputs.version }}\"" Chart.yaml
+          for CHART in $CHARTS; do
+            echo ""
+            echo "========================================"
+            echo "  Processing chart: $CHART"
+            echo "========================================"
+            cd "$REPO_ROOT/charts/$CHART"
 
-      - name: Commit version bump
-        run: |
+            # Read current version
+            VERSION=$(yq '.version' Chart.yaml)
+            echo "Current version: $VERSION"
+
+            # Lint
+            helm lint .
+
+            # Update dependencies (no-op if none declared)
+            helm dependency update . 2>/dev/null || true
+
+            # Package
+            helm package . \
+              --version "$VERSION" \
+              --app-version "$VERSION" \
+              --destination /tmp/helm-packages
+
+            # Push to GHCR
+            echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io \
+              --username "${{ github.actor }}" --password-stdin
+            helm push "/tmp/helm-packages/$CHART-$VERSION.tgz" \
+              oci://ghcr.io/worldinmovies/charts
+
+            # Compute bump type from commit message
+            MSG="${{ github.event.head_commit.message }}"
+            if echo "$MSG" | grep -q "BREAKING CHANGE"; then
+              BUMP="major"
+            elif echo "$MSG" | grep -qiE "^feat(\(.+\))?:"; then
+              BUMP="minor"
+            else
+              BUMP="patch"
+            fi
+            echo "Bump type: $BUMP"
+
+            # Compute new version
+            MAJOR=$(echo "$VERSION" | cut -d. -f1)
+            MINOR=$(echo "$VERSION" | cut -d. -f2)
+            PATCH=$(echo "$VERSION" | cut -d. -f3)
+            case "$BUMP" in
+              major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
+              minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
+              patch) PATCH=$((PATCH + 1)) ;;
+            esac
+            NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+            echo "New version: $NEW_VERSION"
+
+            # Bump chart version
+            yq -i ".version = \"$NEW_VERSION\"" Chart.yaml
+            git add Chart.yaml
+
+            # Create tag
+            TAG="helm/$CHART-$NEW_VERSION"
+            git tag "$TAG"
+            echo "Tag: $TAG"
+
+            cd "$REPO_ROOT"
+          done
+
+          echo ""
+          echo "========================================"
+          echo "  Committing and pushing all changes"
+          echo "========================================"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Chart.yaml
-          git commit -m "chore(helm): bump ${{ matrix.chart }} chart to ${{ steps.bump.outputs.version }} [skip ci]"
-          git push
 
-      - name: Tag chart release
-        run: |
-          git tag "helm/${{ matrix.chart }}-${{ steps.bump.outputs.version }}"
-          git push origin "helm/${{ matrix.chart }}-${{ steps.bump.outputs.version }}"
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(helm): bump chart versions [skip ci]"
+            git push
+          else
+            echo "No version bumps to commit."
+          fi
+
+          # Push all chart tags
+          for CHART in $CHARTS; do
+            cd "$REPO_ROOT/charts/$CHART"
+            VERSION=$(yq '.version' Chart.yaml)
+            git push origin "helm/$CHART-$VERSION" || echo "Tag helm/$CHART-$VERSION already exists or push failed"
+          done
