@@ -107,6 +107,32 @@ Skipped:
 
 ---
 
+### Phase 8: Versioned Docker image releases ✅ DONE
+
+**Context**: Docker images were only tagged `:latest` (pushed on every push to `main` via CI). Issue #5 asked for a release workflow that tags images with semver versions and creates GitHub Releases.
+
+**Changes:**
+- Created `.github/workflows/release.yml` — triggered by pushing `v*` tags or `workflow_dispatch`
+- Builds multi-arch (amd64 + arm64) Docker images for both `seppaleinen/worldinmovies_tmdb` and `seppaleinen/worldinmovies_webapp`
+- Tags images with both `:vX.Y.Z` (semver, stripped of `v` prefix) and `:latest`
+- Creates a GitHub Release with auto-generated release notes from `softprops/action-gh-release`
+- Pre-release detection: tags containing `-` (e.g., `v1.0.0-rc.1`) are marked as prerelease
+- CI pipeline (`ci.yml`) unchanged — continues to build `:latest` on push to `main` for continuous delivery
+
+**Usage:**
+```bash
+git tag v1.0.0
+git push --tags
+# or: trigger workflow_dispatch via GitHub UI with version input
+```
+
+**Edge cases handled:**
+- Duplicate tag push → idempotent (overwrites Docker tag)
+- Pre-release tags → `:v1.0.0-rc.1` tag + no `:latest` update + prerelease flag in GitHub Release
+- Failure mid-workflow → artifacts retained for 1 day for debugging
+
+---
+
 ## File inventory
 
 ### Missing from original tmdb repo (intentionally)
