@@ -107,8 +107,114 @@ test.describe('Seen / Unseen toggle', () => {
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify(createBackendMovie(TEST_MOVIE_ID)),
-      });
+  });
+});
+
+test.describe('Genre filter interaction', () => {
+  test('should include genre filter in API call when a genre is selected', async ({ page }) => {
+    const genreApiCalls: string[] = [];
+
+    // Intercept movie grid API to capture genre filter
+    await page.route(/\/view\/random\/best/, async (route) => {
+      const url = route.request().url();
+      genreApiCalls.push(url);
+      const body = createDiscoverMovies(1, 8);
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
     });
+
+    await page.goto('/');
+
+    // Wait for initial grid to load
+    const grid = page.locator('section').filter({ hasText: 'Featured Films' }).locator('[class*="grid"]').first();
+    await expect(grid.locator('> *')).toHaveCount(8, { timeout: 8000 });
+
+    // Initial call should NOT have genre filter
+    const initialCall = genreApiCalls[0];
+    expect(initialCall).not.toContain('genres');
+
+    // Click the "All Genres" button to open the genre dropdown
+    const genreButton = page.getByText('All Genres');
+    await genreButton.click();
+
+    // Select "Drama" from the dropdown menu
+    const dramaOption = page.getByText('Drama').locator('..');
+    await dramaOption.click();
+
+    // Wait for the second API call with genre filter
+    await page.waitForTimeout(500);
+    const genreCall = genreApiCalls[genreApiCalls.length - 1];
+    expect(genreCall).toContain('genres=Drama');
+
+    // The button text should now be "Drama" instead of "All Genres"
+    await expect(page.getByText('Drama').first()).toBeVisible();
+  });
+
+  test('should clear genre filter when selecting "All Genres" again', async ({ page }) => {
+    const genreApiCalls: string[] = [];
+
+    await page.route(/\/view\/random\/best/, async (route) => {
+      const url = route.request().url();
+      genreApiCalls.push(url);
+      const body = createDiscoverMovies(1, 8);
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
+    });
+
+    await page.goto('/');
+    await expect(
+      page.locator('section').filter({ hasText: 'Featured Films' }).locator('[class*="grid"] > *').first()
+    ).toBeVisible({ timeout: 8000 });
+
+    // Open genre dropdown and select Drama
+    await page.getByText('All Genres').click();
+    await page.getByText('Drama').locator('..').click();
+    await page.waitForTimeout(500);
+
+    // Now clear by selecting "All Genres" from the dropdown
+    await page.getByText('Drama').first().click();
+    await page.getByText('All Genres').first().click();
+    await page.waitForTimeout(500);
+
+    // The latest API call should not contain genre filter
+    const lastCall = genreApiCalls[genreApiCalls.length - 1];
+    expect(lastCall).not.toContain('genres');
+  });
+
+  test('should combine country and genre filters in a single API call', async ({ page }) => {
+    const apiCalls: string[] = [];
+
+    // Intercept both random/best and best/ endpoints
+    await page.route(/\/view\/(random\/best|best\/)/, async (route) => {
+      const url = route.request().url();
+      apiCalls.push(url);
+      const body = createDiscoverMovies(1, 8);
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
+    });
+
+    await page.goto('/');
+    await expect(
+      page.locator('section').filter({ hasText: 'Featured Films' }).locator('[class*="grid"] > *').first()
+    ).toBeVisible({ timeout: 8000 });
+
+    // Select Drama genre first
+    await page.getByText('All Genres').click();
+    await page.getByText('Drama').locator('..').click();
+    await page.waitForTimeout(500);
+
+    // Then select a country via the CountryFilter select
+    const countryTrigger = page.locator('[class*="SelectTrigger"]').first();
+    await countryTrigger.click();
+
+    // Find and click the Sweden option
+    const swedenOption = page.getByText('Sweden').locator('..');
+    await swedenOption.click();
+    await page.waitForTimeout(500);
+
+    // The latest API call should include both country and genre
+    const lastCall = apiCalls[apiCalls.length - 1];
+    expect(lastCall).toContain('genres=Drama');
+    expect(lastCall).toContain('/view/best/SE');
+  });
+});
 
     await page.goto('/');
 
