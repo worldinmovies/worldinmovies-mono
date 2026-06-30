@@ -1,0 +1,62 @@
+# Lightweight test infrastructure for worldinmovies-tmdb backend tests.
+#
+# Provides MongoDB (via testcontainers fallback in manage.py) plus optional
+# Redis and RabbitMQ for integration/behave tests.
+#
+# Usage:
+#   docker compose -f docker-compose.test.yml up -d                           # start infra
+#   MONGO_URL="mongodb://localhost:27017" REDIS_CONNECTION="redis://localhost" \
+#     .venv/bin/python manage.py test   # run tests
+#   docker compose -f docker-compose.test.yml down -v                         # stop infra
+#
+# Or use the convenience scripts:
+#   pnpm test:infra:up   # starts infra
+#   pnpm test            # runs tests against running infra
+#   pnpm test:infra:down # stops infra
+#   pnpm test:ci         # one-shot: infra up → wait → tests → infra down
+#
+# Notes:
+#   - MongoDB runs WITHOUT authentication (test-only, isolated containers).
+#   - testcontainers fallback also uses no auth, so this is consistent.
+
+services:
+  mongo:
+    image: mongo:8
+    ports:
+      - "27017:27017"
+    container_name: tmdb-test-mongo
+    command: --wiredTigerCacheSizeGB 1 --noauth
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      start_period: 15s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    container_name: tmdb-test-redis
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      interval: 10s
+      timeout: 3s
+      start_period: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    container_name: tmdb-test-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: seppa
+      RABBITMQ_DEFAULT_PASS: password
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      start_period: 10s
+      retries: 5

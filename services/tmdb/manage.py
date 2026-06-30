@@ -4,12 +4,16 @@ import sys
 
 
 if 'test' in sys.argv or 'behave' in sys.argv:
-    from testcontainers.mongodb import MongoDbContainer
-
     os.environ["ENVIRONMENT"] = "test"
-    mongo_container = MongoDbContainer("mongo:8", dbname="test")
-    mongo_container.start()
-    os.environ['MONGO_URL'] = mongo_container.get_connection_url()
+
+    # Pre-set MONGO_URL means external infra (e.g. docker-compose.test.yml)
+    # is available — skip testcontainers to avoid slow container spin-up.
+    if 'MONGO_URL' not in os.environ:
+        from testcontainers.mongodb import MongoDbContainer
+
+        mongo_container = MongoDbContainer("mongo:8", dbname="test")
+        mongo_container.start()
+        os.environ['MONGO_URL'] = mongo_container.get_connection_url()
 
 
 if __name__ == "__main__":
