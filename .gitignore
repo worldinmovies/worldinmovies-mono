@@ -30,6 +30,10 @@ playwright-report/
 .env
 .env.local
 
+# Local tool artifacts
+.ijfw/
+.cortexkit/
+
 # Trunk
 .trunk/
 
