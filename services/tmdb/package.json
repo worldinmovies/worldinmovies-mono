@@ -6,6 +6,9 @@
     "test": ".venv/bin/python manage.py behave",
     "test:unit": ".venv/bin/python manage.py test",
     "lint": ".venv/bin/ruff check .",
-    "dev": "hypercorn --config=gunicorn.config.py --reload settings.asgi:application"
+    "dev": "hypercorn --config=gunicorn.config.py --reload settings.asgi:application",
+    "test:infra:up": "docker compose -f docker-compose.test.yml up -d --wait && echo 'Test infra is ready'",
+    "test:infra:down": "docker compose -f docker-compose.test.yml down -v",
+    "test:ci": "pnpm test:infra:up && pnpm test && pnpm test:unit; EXIT_CODE=$?; pnpm test:infra:down; exit $EXIT_CODE"
   }
 }
