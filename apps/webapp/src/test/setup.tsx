@@ -2,10 +2,11 @@ import { cleanup } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { vi } from 'vitest';
 
-// Mock Capacitor
+// Mock Capacitor — getPlatform is a vi.fn so tests can override it
+const mockGetPlatform = vi.fn(() => 'web');
 vi.mock('@capacitor/core', () => ({
   Capacitor: {
-    getPlatform: () => 'web',
+    getPlatform: mockGetPlatform,
     isNativePlatform: () => false,
     isPluginAvailable: () => false,
     Http: {
@@ -113,7 +114,17 @@ mockResizeObserver.mockReturnValue({
 vi.stubGlobal('ResizeObserver', mockResizeObserver);
 
 // Mock matchMedia with cached instances (same query = same mql object)
-const matchMediaInstances = new Map<string, any>();
+interface MockMediaQueryList {
+  matches: boolean;
+  media: string;
+  onchange: null | EventListener;
+  addListener: (cb: EventListener) => void;
+  removeListener: (cb: EventListener) => void;
+  addEventListener: (event: string, cb: EventListener) => void;
+  removeEventListener: (event: string, cb: EventListener) => void;
+  dispatchEvent: (event: Event) => boolean;
+}
+const matchMediaInstances = new Map<string, MockMediaQueryList>();
 const matchMediaMock = (query: string) => {
   // Return cached instance for the same query string
   if (matchMediaInstances.has(query)) {

@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { BACKEND_URL } from "@/lib/config";
 import { ImportedMovie } from "@/lib/models";
 import { Download, Upload } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { toast } from "sonner";
 
 interface LetterboxdBackendMovie {
@@ -38,7 +38,10 @@ const mapMyMovieToImportedMovie = (myMovie: LetterboxdBackendMovie): ImportedMov
 
 export const LetterboxdImport = ({isImporting, setIsImporting, addToLog}: LetterboxdImportProps) => {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
-    const [imported, setImported] = useState<ImportedMovie[]>([]);
+    const [imported, setImported] = useState<ImportedMovie[]>(() => {
+      const stored = JSON.parse(localStorage.getItem('seenMovies') || '[]');
+      return dedupe([], stored);
+    });
 
     const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
@@ -46,23 +49,6 @@ export const LetterboxdImport = ({isImporting, setIsImporting, addToLog}: Letter
         setSelectedFile(file);
       }
     };
-
-    useEffect(() => {
-      const imp = JSON.parse(localStorage.getItem('seenMovies') || '[]')
-      setImported(prev => dedupe(prev, imp))
-    }, []);
-
-    const dedupe = (prev: ImportedMovie[], imp: ImportedMovie[]) => {
-      const merged = [...prev, ...imp];
-
-      // Deduplicate by id
-      const deduped = Array.from(
-        new Map(merged.map(movie => [movie.id, movie])).values()
-      );
-    
-      return deduped;
-    }
-
 
     const handleLetterboxdImport = async () => {
       if (!selectedFile) {
@@ -84,16 +70,15 @@ export const LetterboxdImport = ({isImporting, setIsImporting, addToLog}: Letter
               const imp: ImportedMovie[] = Object.values(json.found)
                 .flat()
                 .map(mapMyMovieToImportedMovie);
-            
-              setImported(dedupe(imp))
 
               const failures = Object.values(json.not_found);
-            
+
               const existingSeenMovies: ImportedMovie[] = JSON.parse(localStorage.getItem('seenMovies') || '[]');
               const updatedSeenMovies = [...new Set([...existingSeenMovies, ...imp])];
               const uniqueList: ImportedMovie[] = dedupe(imported, updatedSeenMovies)
 
               localStorage.setItem('seenMovies', JSON.stringify(uniqueList));
+              setImported(uniqueList);
               addToLog(`Parsed ${imp.length} movies from Letterboxd`);
               if(failures.length != 0) {
                 addToLog(`Movies that couldn't be mapped: ${failures.length}`);
@@ -167,3 +152,10 @@ export const LetterboxdImport = ({isImporting, setIsImporting, addToLog}: Letter
       </div>
     )
 }
+
+const dedupe = (prev: ImportedMovie[], imp: ImportedMovie[]): ImportedMovie[] => {
+  const merged = [...prev, ...imp];
+  return Array.from(
+    new Map(merged.map(movie => [movie.id, movie])).values()
+  );
+};
