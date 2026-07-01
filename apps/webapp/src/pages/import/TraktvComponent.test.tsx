@@ -1,35 +1,12 @@
 import { describe, it, expect } from 'vitest';
+import {
+  generateCodeVerifier,
+  base64URLEncode,
+  sha256,
+  generateCodeChallenge,
+} from '@/lib/pkce';
 
-describe('PKCE helpers (from TraktvComponent)', () => {
-  // These are the same functions from TraktvComponent.tsx
-  const generateCodeVerifier = () => {
-    const array = new Uint8Array(32);
-    crypto.getRandomValues(array);
-    return btoa(String.fromCharCode(...Array.from(array)))
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=/g, '');
-  };
-
-  const base64URLEncode = (buffer: Uint8Array) => {
-    return btoa(String.fromCharCode(...Array.from(buffer)))
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=/g, '');
-  };
-
-  const sha256 = async (plain: string) => {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(plain);
-    const hash = await crypto.subtle.digest('SHA-256', data);
-    return new Uint8Array(hash);
-  };
-
-  const generateCodeChallenge = async (verifier: string) => {
-    const hashed = await sha256(verifier);
-    return base64URLEncode(hashed);
-  };
-
+describe('PKCE helpers', () => {
   describe('generateCodeVerifier', () => {
     it('should generate a 43-character base64url string', async () => {
       const verifier = generateCodeVerifier();
