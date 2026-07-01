@@ -207,4 +207,30 @@ describe('useWebSocket hook', () => {
 
     expect(mockWebSocketInstance.close).toHaveBeenCalled();
   });
+
+  it('should use custom retryDelay on reconnect', () => {
+    vi.useFakeTimers();
+
+    const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout');
+
+    const { result } = renderHook(() =>
+      useWebSocket(undefined, { retryDelay: 50 }),
+    );
+
+    act(() => {
+      triggerEvent('open');
+    });
+
+    expect(result.current.connected).toBe(true);
+
+    act(() => {
+      triggerEvent('close');
+    });
+
+    expect(result.current.connected).toBe(false);
+    expect(setTimeoutSpy).toHaveBeenLastCalledWith(expect.any(Function), 50);
+
+    setTimeoutSpy.mockRestore();
+    vi.useRealTimers();
+  });
 });

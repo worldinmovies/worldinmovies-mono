@@ -4,7 +4,11 @@ import { getBackendUrl } from "@/lib/config";
 
 const ws_scheme = window.location.protocol === "https:" ? "wss" : "ws";
 
-export const useWebSocket = (url?: string) => {
+export const useWebSocket = (
+  url?: string,
+  options?: { retryDelay?: number },
+) => {
+  const retryDelay = options?.retryDelay ?? 3000;
   const [connected, setConnected] = useState(false);
   const [messages, setMessages] = useState<string[]>([]);
   const ws = useRef<WebSocket | null>(null);
@@ -47,8 +51,8 @@ export const useWebSocket = (url?: string) => {
         ws.current.onclose = () => {
           setConnected(false);
           
-          // Attempt to reconnect after 3 seconds
-          setTimeout(connect, 3000);
+          // Attempt to reconnect after retryDelay
+          setTimeout(connect, retryDelay);
         };
         
         ws.current.onerror = (error) => {
