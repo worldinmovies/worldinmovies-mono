@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from "sonner";
-import { BACKEND_URL } from "@/lib/config";
+import { getBackendUrl } from "@/lib/config";
 
 const ws_scheme = window.location.protocol === "https:" ? "wss" : "ws";
 
@@ -10,7 +10,7 @@ export const useWebSocket = (url?: string) => {
   const ws = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    if (!BACKEND_URL) {
+    if (!getBackendUrl()) {
       // Simulate websocket messages for demo
       const interval = setInterval(() => {
         const mockMessage = `2020-01-01 superduperlog`;
@@ -20,12 +20,12 @@ export const useWebSocket = (url?: string) => {
       return () => clearInterval(interval);
     }
 
-    const websocketUrl = url || `${BACKEND_URL.replace('http', 'ws')}/ws`;
+    const websocketUrl = url || `${getBackendUrl().replace('http', 'ws')}/ws`;
     
     const connect = () => {
       try {
-        const matcher = BACKEND_URL.match(/.*(:\d+).*/);
-        const value = matcher !== null ? matcher[1] : BACKEND_URL;
+        const matcher = getBackendUrl().match(/.*(:\d+).*/);
+        const value = matcher !== null ? matcher[1] : getBackendUrl();
         console.log(`Connecting to: ${value} based on ${value}`)
         ws.current = new WebSocket(`${ws_scheme}://${window.location.hostname}${value}/ws`);
         //ws.current = new WebSocket(websocketUrl);

@@ -1,23 +1,22 @@
 import { Capacitor } from "@capacitor/core";
-const platform = Capacitor.getPlatform();
-const isNative = platform === "ios" || platform === "android";
 
-const env = import.meta.env.MODE; // "development" or "production"
-const envVariable = import.meta.env.VITE_TMDB_URL;
+let cachedUrl: string | undefined;
 
-let backendUrl: string;
+export const getBackendUrl = (): string => {
+  if (cachedUrl !== undefined) return cachedUrl;
 
-if (envVariable && !isNative) {
-  backendUrl = envVariable;
-} 
-else if (env === "development") {
-  backendUrl = isNative
-    ? "http://192.168.1.37:8020"
-    : "/tmdb";
-} else {
-  backendUrl = isNative
-    ? "https://worldinmovies.labb.site/tmdb"
-    : "/tmdb";
-}
+  const platform = Capacitor.getPlatform();
+  const isNative = platform === "ios" || platform === "android";
+  const env = import.meta.env.MODE;
+  const envVariable = import.meta.env.VITE_TMDB_URL;
 
-export const BACKEND_URL = backendUrl;
+  if (envVariable && !isNative) {
+    cachedUrl = envVariable;
+  } else if (env === "development") {
+    cachedUrl = isNative ? "http://192.168.1.37:8020" : "/tmdb";
+  } else {
+    cachedUrl = isNative ? "https://worldinmovies.labb.site/tmdb" : "/tmdb";
+  }
+
+  return cachedUrl;
+};

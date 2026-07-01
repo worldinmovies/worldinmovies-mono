@@ -4,7 +4,7 @@ import { useWebSocket } from '@/hooks/useWebSocket';
 
 // Set up config mock at top level (must be before imports)
 vi.mock('@/lib/config', () => ({
-  BACKEND_URL: 'http://localhost:3000',
+  getBackendUrl: () => 'http://localhost:3000',
 }));
 
 describe('useWebSocket hook', () => {
@@ -71,7 +71,7 @@ describe('useWebSocket hook', () => {
     vi.useRealTimers();
   });
 
-  it('should connect to WebSocket when BACKEND_URL is set', () => {
+  it('should connect to WebSocket when getBackendUrl() is set', () => {
     const { result } = renderHook(() => useWebSocket());
 
     // Trigger onopen

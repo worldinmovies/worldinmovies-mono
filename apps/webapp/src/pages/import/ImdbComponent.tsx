@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { BACKEND_URL } from "@/lib/config";
+import { getBackendUrl } from "@/lib/config";
 import { ImportedMovie } from "@/lib/models";
 import { Download, Upload } from "lucide-react";
 import React, { useEffect, useState } from "react";
@@ -75,8 +75,8 @@ export const ImdbImport = ({isImporting, setIsImporting, addToLog}: ImdbImportPr
       addToLog("Parsing data from IMDB");
       const data = new FormData()
       data.append('file', selectedFile)
-      if(BACKEND_URL) {
-        fetch(`${BACKEND_URL}/imdb/ratings`,
+      if(getBackendUrl()) {
+        fetch(`${getBackendUrl()}/imdb/ratings`,
             {
                 method: 'POST',
                 body: data

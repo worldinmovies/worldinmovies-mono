@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { Movie, BackendMovie, DiscoverMovie } from "@/lib/models";
-import { BACKEND_URL } from "@/lib/config";
+import { getBackendUrl } from "@/lib/config";
 import { shuffleArray, transferDiscoverMovie, transferBackendMovie } from "@/lib/transforms";
 import * as Sentry from "@sentry/react";
 
@@ -34,7 +34,7 @@ export const useMovies = (selectedCountry?: string | null) => {
       }
 
       try {
-        if (BACKEND_URL) {
+        if (getBackendUrl()) {
           // Fetch from backend API
           let url: string;
           // Use skipOverride if provided, otherwise use current movies.length
@@ -49,9 +49,9 @@ export const useMovies = (selectedCountry?: string | null) => {
           const limit = 8;
           if (countryCode || selectedCountry) {
             const code = countryCode || selectedCountry;
-            url = `${BACKEND_URL}/view/best/${code.toUpperCase()}?skip=${skipMovies}${genre_match}&limit=${limit}`;
+            url = `${getBackendUrl()}/view/best/${code.toUpperCase()}?skip=${skipMovies}${genre_match}&limit=${limit}`;
           } else {
-            url = `${BACKEND_URL}/view/random/best/${skipMovies}?seed=${seed}${genre_match}&limit=${limit}`;
+            url = `${getBackendUrl()}/view/random/best/${skipMovies}?seed=${seed}${genre_match}&limit=${limit}`;
           }
 
           const response = await fetch(url);
@@ -113,9 +113,9 @@ export const useMovies = (selectedCountry?: string | null) => {
     setLoading(true);
 
     try {
-      if (BACKEND_URL) {
+      if (getBackendUrl()) {
         const limit = 10;
-        const url = `${BACKEND_URL}/view/best/${countryCode.toUpperCase()}?skip=0&limit=${limit}`;
+        const url = `${getBackendUrl()}/view/best/${countryCode.toUpperCase()}?skip=0&limit=${limit}`;
         const response = await fetch(url);
         if (response.ok) {
           const newMovies = await response.json();
@@ -146,13 +146,13 @@ export const useMovies = (selectedCountry?: string | null) => {
 
   const fetchMovieDetails = useCallback(
     async (movieId: number) => {
-      if (!BACKEND_URL) {
+      if (!getBackendUrl()) {
         // Return existing movie data if no backend
         return movies.find((m) => m.id === movieId);
       }
 
       try {
-        const response = await fetch(`${BACKEND_URL}/movie/${movieId}`);
+        const response = await fetch(`${getBackendUrl()}/movie/${movieId}`);
         if (response.ok) {
           const data: BackendMovie = await response.json();
           if(data) {
