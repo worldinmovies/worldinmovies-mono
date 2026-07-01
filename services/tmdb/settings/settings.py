@@ -9,7 +9,7 @@ MEILISEARCH_URL = os.getenv("MEILISEARCH_URL", "http://meilisearch:7700")
 MEILISEARCH_API_KEY = os.getenv("MEILISEARCH_API_KEY", "")
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', '!xr(&l&-)*&!$kfj_&!ku#@%z8+ox4kb$y(k$nh8ur8b5wjshj')
+SECRET_KEY = os.environ['DJANGO_SECRET_KEY']
 DEBUG = False
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'Europe/Stockholm'
@@ -84,7 +84,13 @@ MIDDLEWARE = [
 ]
 
 # CORS_ALLOW_ALL_ORIGINS = True
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    'tmdb',                              # Docker Compose service name
+    'tmdb.worldinmovies.svc.cluster.local',  # internal K8s service
+    'worldinmovies.labb.site',           # production domain
+]
 CORS_ALLOWED_ORIGIN_REGEXES = [
     r'^https?://localhost(:\d+)?$',   # dev
     r'^https://worldinmovies\.labb\.site$', # prod
@@ -96,7 +102,7 @@ environment = os.environ.get('ENVIRONMENT', 'docker')
 # RABBITMQ
 rabbit_url = os.environ.get('RABBITMQ_URL', 'rabbitmq')
 mq_user = os.environ.get('RABBITMQ_DEFAULT_USER', 'seppa')
-mq_pass = os.environ.get('RABBITMQ_DEFAULT_PASS', 'password')
+mq_pass = os.environ['RABBITMQ_DEFAULT_PASS']
 CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', f"amqp://{mq_user}:{mq_pass}@{rabbit_url}")
 CELERY_TIMEZONE = "Europe/Stockholm"
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
@@ -127,7 +133,7 @@ else:
 if environment == 'docker' or environment == 'localhost':
     mongo_url = os.environ.get('MONGO_URL', 'mongo')
     mongo_user = os.environ.get('MONGO_USER', 'seppa')
-    mongo_pass = os.environ.get('MONGO_PASSWORD', 'password')
+    mongo_pass = os.environ['MONGO_PASSWORD']
     super_url = "mongodb://%s:%s@%s:27017/tmdb?authSource=tmdb" % (mongo_user, mongo_pass, mongo_url)
     mongoengine.connect(db='tmdb',
                         host=super_url,

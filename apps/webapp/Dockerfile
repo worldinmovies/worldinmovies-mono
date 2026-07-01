@@ -24,12 +24,11 @@ FROM nginx:stable-alpine
 ENV TZ=Europe/Stockholm
 COPY --from=build /app/apps/webapp/dist /usr/share/nginx/html
 # new
-RUN apk add --no-cache gettext
+RUN apk add --no-cache gettext openssl
 
-COPY apps/webapp/nginx/.htpasswd                     /etc/nginx/.htpasswd
 COPY apps/webapp/nginx/sites-enabled/app.conf.template /etc/nginx/conf.d/default.conf.template
 
 EXPOSE 80
 
 #CMD ["nginx", "-g", "daemon off;"]
-ENTRYPOINT ["sh", "-c", "envsubst '$TMDB_UPSTREAM' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf && exec nginx -g 'daemon off;'"]
+ENTRYPOINT ["sh", "-c", "if [ ! -f /etc/nginx/.htpasswd ]; then P=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 16); printf 'admin:%s\\n' \"$(openssl passwd -apr1 \"$P\")\" > /etc/nginx/.htpasswd; echo \"Admin password: $P\"; fi && envsubst '$TMDB_UPSTREAM' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf && exec nginx -g 'daemon off;'"]

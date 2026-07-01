@@ -45,10 +45,10 @@ jobs:
         docker compose -f docker-compose.test.yml up -d --wait
     - name: Run behave integration tests
       run: |
-        MONGO_URL="mongodb://localhost:27017" python manage.py behave
+        MONGO_URL="mongodb://localhost:27017" MONGO_PASSWORD="password" DJANGO_SECRET_KEY="$(uuidgen)" RABBITMQ_DEFAULT_PASS="password" python manage.py behave
     - name: Run unit tests
       run: |
-        MONGO_URL="mongodb://localhost:27017" python manage.py test
+        MONGO_URL="mongodb://localhost:27017" MONGO_PASSWORD="password" DJANGO_SECRET_KEY="$(uuidgen)" RABBITMQ_DEFAULT_PASS="password" python manage.py test
     - name: Tear down test infrastructure
       if: ${{ always() }}
       run: |
@@ -271,8 +271,10 @@ jobs:
     - name: Start containers and run integration tests
       working-directory: tests/e2e
       run: |
+        ADMIN_KEY=$(uuidgen)
         echo "VITE_WEBAPP_PORT=80" > .env
         echo "DJANGO_SECRET_KEY="$(uuidgen) >> .env
+        echo "ADMIN_API_KEY=$ADMIN_KEY" >> .env
         docker compose up -d || docker compose up -d
           docker cp datasubset/tmdb.movie.json mongo:/
           docker cp datasubset/tmdb.flattened_movie.json mongo:/
@@ -280,7 +282,7 @@ jobs:
           docker exec mongo mongoimport -u seppa -p password -d tmdb -c movie --mode upsert --jsonArray --type json --file tmdb.movie.json
           docker exec mongo mongoimport -u seppa -p password -d tmdb -c movie --mode upsert --jsonArray --type json --file tmdb.flattened_movie.json
           # Trigger Meilisearch indexing so the search E2E tests have data
-          curl -X POST http://localhost:8020/index/movies
+          curl -X POST -H "X-API-Key: $ADMIN_KEY" http://localhost:8020/index/movies
           # Poll Meilisearch until at least one result appears (or timeout after 60s)
           for i in $(seq 1 30); do
             sleep 2
