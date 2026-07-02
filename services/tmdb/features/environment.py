@@ -11,6 +11,7 @@ from behave import fixture
 def setup_mongo(context):
     os.environ['ENVIRONMENT'] = 'test'
     os.environ['TMDB_API'] = 'test'
+    os.environ['ADMIN_API_KEY'] = 'test'
     os.environ['CELERY_BROKER_URL'] = 'memory://'
     settings.CELERY_TASK_EAGER_PROPAGATES = 'True'
     settings.CELERY_TASK_ALWAYS_EAGER = 'True'

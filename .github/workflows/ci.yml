@@ -45,7 +45,7 @@ jobs:
         docker compose -f docker-compose.test.yml up -d --wait
     - name: Run behave integration tests
       run: |
-        MONGO_URL="mongodb://localhost:27017" MONGO_PASSWORD="password" DJANGO_SECRET_KEY="$(uuidgen)" RABBITMQ_DEFAULT_PASS="password" python manage.py behave
+        MONGO_URL="mongodb://localhost:27017" MONGO_PASSWORD="password" DJANGO_SECRET_KEY="$(uuidgen)" RABBITMQ_DEFAULT_PASS="password" ADMIN_API_KEY="test" python manage.py behave
     - name: Run unit tests
       run: |
         MONGO_URL="mongodb://localhost:27017" MONGO_PASSWORD="password" DJANGO_SECRET_KEY="$(uuidgen)" RABBITMQ_DEFAULT_PASS="password" python manage.py test

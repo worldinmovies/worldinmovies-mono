@@ -104,7 +104,11 @@ def populate_discovery(context):
 
 @step(u'calling {url}')
 def calling_url(context, url):
-    context.response = context.test.client.get(url)
+    headers = {}
+    api_key = os.environ.get('ADMIN_API_KEY')
+    if api_key:
+        headers['HTTP_X_API_KEY'] = api_key
+    context.response = context.test.client.get(url, **headers)
 
 
 @step(u'http status should be {http_status}')
