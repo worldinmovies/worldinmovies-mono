@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'apps.app',
     'apps.tmdb',
     'apps.imdb',
+    'apps.trakt',
     'celery',
     'corsheaders',
     'django_crontab',

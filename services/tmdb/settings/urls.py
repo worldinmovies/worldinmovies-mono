@@ -1,5 +1,6 @@
 from apps.api import views
 from apps.api.auth import require_admin_token
+from apps.trakt import views as trakt_views
 from django.urls import path, re_path, include
 
 urlpatterns = [
@@ -15,6 +16,12 @@ urlpatterns = [
     path('letterboxd/ratings',              views.parse_user_letterboxd_ratings), # user CSV upload
     re_path(r'^status$',                    views.import_status),
     re_path(r'^health/',                    include('health_check.urls')),  # k8s probes
+
+    # ── Trakt OAuth proxy (httpOnly cookie via backend) ────────────
+    path('trakt/callback',                  trakt_views.trakt_callback),
+    path('trakt/session',                   trakt_views.trakt_session),
+    path('trakt/logout',                    trakt_views.trakt_logout),
+    path('trakt/import',                    trakt_views.trakt_import),
 
     # ── Admin endpoints (require X-API-Key header) ─────────────────
     path('import/tmdb/daily',               require_admin_token(views.download_file)),
