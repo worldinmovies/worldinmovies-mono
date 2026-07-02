@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Authorizing Trakt...</title></head>
+<body>
+<script>
+(function() {
+  var params = new URLSearchParams(window.location.search);
+  var origin = window.location.origin;
+  var code = params.get('code');
+  var error = params.get('error');
+
+  if (error && window.opener) {
+    window.opener.postMessage({ type: 'trakt-oauth', error: error }, origin);
+    window.close();
+  } else if (code && window.opener) {
+    window.opener.postMessage({ type: 'trakt-oauth', code: code }, origin);
+    window.close();
+  } else if (code) {
+    document.body.textContent = 'Authorization successful! You can close this window.';
+  } else {
+    document.body.textContent = 'Authorization failed. Close this window and try again.';
+  }
+})();
+</script>
+</body>
+</html>

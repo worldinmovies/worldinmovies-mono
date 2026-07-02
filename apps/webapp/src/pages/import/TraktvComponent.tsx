@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import * as Sentry from "@sentry/react";
 import { ImportedMovie } from "@/lib/models";
 import { Capacitor } from "@capacitor/core";
-import { App, PluginListenerHandle, URLOpenListenerEvent } from '@capacitor/app';
+import { App, PluginListenerHandle } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
 import { Preferences } from '@capacitor/preferences';
 import { useNavigate } from "react-router-dom";
@@ -17,7 +17,7 @@ const TRAKT_CLIENT_ID = '284dd0bd619c3cbd73ce225fd4ee12cb1332cc515d4b8da81aaf992
 const isMobileApp = Capacitor.isNativePlatform();
 const TRAKT_REDIRECT_URI = isMobileApp
   ? "worldinmovie://trakt-callback"
-  : `${window.location.origin}/trakt-callback`;
+  : `${window.location.origin}/trakt-callback.html`;
 
 // ---- Helpers ----
 
@@ -92,7 +92,7 @@ export const TraktImport = () => {
       .catch(() => setIsConnected(false));
   }, []);
 
-  // ---- Start OAuth ----
+  // ---- Start OAuth (web: popup, mobile: in-app browser) ----
   const handleTraktOAuth = async () => {
     if (!TRAKT_CLIENT_ID) {
       toast.error("Please configure TRAKT_CLIENT_ID in the component");
@@ -121,7 +121,20 @@ export const TraktImport = () => {
       if (isMobileApp) {
         await Browser.open({ url: authUrl.toString() });
       } else {
-        window.location.href = authUrl.toString();
+        // Open popup — if blocked, show error
+        const popup = window.open(authUrl.toString(), 'trakt-oauth', 'width=600,height=700');
+        if (!popup || popup.closed) {
+          toast.error("Popup was blocked. Please allow popups for this site and try again.");
+          setIsConnecting(false);
+          return;
+        }
+        // Monitor popup close — if user closes without authorizing, reset
+        const timer = setInterval(() => {
+          if (popup.closed) {
+            clearInterval(timer);
+            setIsConnecting(false);
+          }
+        }, 1000);
       }
     } catch (error) {
       console.error('Error starting OAuth flow:', error);
@@ -223,11 +236,50 @@ export const TraktImport = () => {
     } finally {
       setIsImporting(false);
       setIsConnecting(false);
-      if (!isMobileApp) {
-        window.history.replaceState({}, document.title, window.location.pathname);
-      }
     }
   }, [addToLog, fetchAndImport]);
+
+  // ---- Listen for postMessage from OAuth popup (web only) ----
+  useEffect(() => {
+    if (isMobileApp) return;
+
+    const handler = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type !== 'trakt-oauth') return;
+
+      if (event.data.error) {
+        toast.error(`Authorization denied: ${event.data.error}`);
+        setIsConnecting(false);
+      } else if (event.data.code) {
+        handleOAuthCallback(event.data.code);
+      }
+    };
+
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, [handleOAuthCallback]);
+
+  // ---- Listen for Capacitor deep link (mobile only) ----
+  useEffect(() => {
+    if (!isMobileApp) return;
+
+    let listener: PluginListenerHandle | null = null;
+    (async () => {
+      listener = await App.addListener('appUrlOpen', (data) => {
+        if (data.url.startsWith('worldinmovie://trakt-callback')) {
+          const url = new URL(data.url);
+          const code = url.searchParams.get('code');
+          if (code) {
+            handleOAuthCallback(code);
+            Browser.close();
+          }
+        }
+      });
+    })();
+    return () => {
+      if (listener) listener.remove();
+    };
+  }, [handleOAuthCallback]);
 
   // ---- Disconnect ----
   const handleDisconnect = async () => {
@@ -240,34 +292,6 @@ export const TraktImport = () => {
       toast.error("Failed to disconnect");
     }
   };
-
-  // ---- Handle OAuth callback from Trakt redirect ----
-  useEffect(() => {
-    if (isMobileApp) {
-      let listenerHandle: PluginListenerHandle | null = null;
-      (async () => {
-        listenerHandle = await App.addListener('appUrlOpen', (data: URLOpenListenerEvent) => {
-          if (data.url.startsWith('worldinmovie://trakt-callback')) {
-            const url = new URL(data.url);
-            const code = url.searchParams.get('code');
-            if (code) {
-              handleOAuthCallback(code);
-              Browser.close();
-            }
-          }
-        });
-      })();
-      return () => {
-        if (listenerHandle) listenerHandle.remove();
-      };
-    } else {
-      const urlParams = new URLSearchParams(window.location.search);
-      const code = urlParams.get('code');
-      if (code) {
-        handleOAuthCallback(code);
-      }
-    }
-  }, [handleOAuthCallback]);
 
   // ---- Render ----
   return (
