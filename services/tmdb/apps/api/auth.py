@@ -18,16 +18,17 @@ import json
 from functools import wraps
 from django.http import HttpResponse
 
-# The expected admin API key. If empty, all requests are rejected (safe default).
-ADMIN_API_KEY = os.environ.get('ADMIN_API_KEY', '')
-
-
 def require_admin_token(view_func):
-    """Decorator that requires a valid X-API-Key header."""
+    """Decorator that requires a valid X-API-Key header.
+
+    Reads ADMIN_API_KEY from env at request time so tests can set
+    it via environment.py's before_all fixture.
+    """
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
+        expected = os.environ.get('ADMIN_API_KEY', '')
         token = request.headers.get('X-API-Key', '')
-        if not token or token != ADMIN_API_KEY:
+        if not token or token != expected:
             return HttpResponse(
                 json.dumps({"error": "Unauthorized"}),
                 status=401,
