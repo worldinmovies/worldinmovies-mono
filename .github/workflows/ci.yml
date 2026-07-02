@@ -64,8 +64,6 @@ jobs:
     - uses: actions/checkout@v4
     - name: Install pnpm
       uses: pnpm/action-setup@v4
-      with:
-        version: 11
     - name: Use Node.js 22.x
       uses: actions/setup-node@v4
       with:
@@ -257,8 +255,6 @@ jobs:
     - uses: actions/checkout@v4
     - name: Install pnpm
       uses: pnpm/action-setup@v4
-      with:
-        version: 11
     - name: Use Node.js 22.x
       uses: actions/setup-node@v4
       with:
