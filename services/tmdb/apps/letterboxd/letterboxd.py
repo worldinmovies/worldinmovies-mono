@@ -1,4 +1,5 @@
 import csv
+from apps.app.helper import sanitize_csv_cell
 from apps.app.meilisearch_client import client
 from apps.app.models import Movie
 
@@ -27,8 +28,8 @@ def parse_user_watched(file):
         return hits or []
 
     for row in csv_as_dicts:
-        title = row['Name'].strip()
-        year = row['Year'].strip()
+        title = sanitize_csv_cell(row['Name'].strip())
+        year = sanitize_csv_cell(row['Year'].strip())
         #print(f"\nSearching for: title={title!r}, year={year!r}")
 
         # Try 1: filter by year (best case) — requires year to be filterable & present in documents

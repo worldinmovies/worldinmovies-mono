@@ -17,14 +17,15 @@ USE_I18N = True
 USE_L10N = True
 USE_TZ = True
 
-sentry_url = os.getenv('SENTRY_URL')
-sentry_sdk.init(
-    dsn=sentry_url,
-    # Add data like request headers and IP for users;
-    # see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
-    send_default_pii=True,
-    release='backend-0.0.1'
-)
+sentry_dsn = os.getenv('SENTRY_URL') or os.getenv('SENTRY_API')
+if sentry_dsn:
+    sentry_sdk.init(
+        dsn=sentry_dsn,
+        send_default_pii=False,
+        release='backend-0.0.1',
+        traces_sample_rate=0.01,
+        profiles_sample_rate=0.01,
+    )
 
 # Application definition
 
@@ -167,15 +168,6 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
-# ------------------ SENTRY ------------------
-sentryApi = os.environ.get('SENTRY_API', '')
-if sentryApi:
-    sentry_sdk.init(
-        dsn=sentryApi,
-        traces_sample_rate=0.01,
-        profiles_sample_rate=0.01,
-    )
-
 # Internationalization
 # https://docs.djangoproject.com/en/1.11/topics/i18n/
 

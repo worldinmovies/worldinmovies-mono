@@ -58,8 +58,7 @@
   ],
   "vulnerabilityAlerts": {
     "labels": ["security"],
-    "automerge": true,
-    "automergeType": "pr"
+    "automerge": false
   },
   "major": {
     "automerge": false

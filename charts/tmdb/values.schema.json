@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "secrets": {
+      "type": "object",
+      "description": "Secret values — must not contain REPLACE_ME placeholder",
+      "properties": {
+        "DJANGO_SECRET_KEY": {
+          "type": "string",
+          "minLength": 16,
+          "pattern": "^(?!REPLACE_ME).+"
+        },
+        "TMDB_API_KEY": {
+          "type": "string",
+          "minLength": 8,
+          "pattern": "^(?!REPLACE_ME).+"
+        },
+        "SENTRY_DSN": {
+          "type": "string",
+          "pattern": "^(?!REPLACE_ME).*"
+        },
+        "ADMIN_API_KEY": {
+          "type": "string",
+          "minLength": 8,
+          "pattern": "^(?!REPLACE_ME).+"
+        }
+      },
+      "required": ["DJANGO_SECRET_KEY", "TMDB_API_KEY", "ADMIN_API_KEY"]
+    }
+  }
+}
