@@ -7,7 +7,7 @@ from sentry_sdk.crons import monitor
 from channels.layers import get_channel_layer
 
 from apps.worker.celery_tasks import import_imdb_ratings_task, import_imdb_titles_task
-from apps.app.helper import chunks, __unzip_file, log
+from apps.app.helper import chunks, sanitize_csv_cell, __unzip_file, log
 from apps.app.db_models import Log, Movie
 
 
@@ -18,7 +18,7 @@ def parse_user_watched(file):
     result = {'found': {}, 'not_found': []}
     data = {}
     for i in [json.loads(json.dumps(x)) for x in csv_as_dicts]:
-        data[i['Const']] = {"title": i['Title'], "year": i['Year']}
+        data[i['Const']] = {"title": sanitize_csv_cell(i['Title']), "year": sanitize_csv_cell(i['Year'])}
     count = 0
     for i in chunks(data.items(), 100):
         u = [x[0] for x in i]

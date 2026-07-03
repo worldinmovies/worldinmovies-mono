@@ -10,11 +10,14 @@ import { Movie } from "@/lib/models";
 import countryData from '@/assets/countrycodes.json';
 import genresData from '@/assets/genres.json';
 import * as Sentry from "@sentry/react";
-
-interface WatchlistItem {
-  movie: Movie;
-  tag: string;
-}
+import {
+  filterByWatchlist,
+  filterBySeenStatus,
+  buildCountryOptions,
+  buildGenreOptions,
+  buildWatchlistTagOptions,
+  WatchlistItem,
+} from "@/lib/filters";
 
 export const MovieGrid = () => {
   const { movies, loading, loadMoreMovies, loadMoviesForCountry, fetchMovieDetails } = useMovies();
@@ -89,43 +92,18 @@ export const MovieGrid = () => {
     loadMoreMovies(seed, selectedCountry, 0, genreFilter, true);
   }, [genreFilter, selectedCountry]);
   
-  const countries = useMemo(() => {
-    return Object.entries(countryData).map(([code, name]) => ({
-      country: name,
-      countryCode: code,
-      flag: `https://flagcdn.com/16x12/${code.toLowerCase()}.png`
-    }));
-  }, []);
+  const countries = useMemo(() => buildCountryOptions(countryData), []);
 
-  const uniqueGenres = useMemo(() => {
-    return ['all', ...Array.from(genresData).sort()];
-  }, []);
+  const uniqueGenres = useMemo(() => buildGenreOptions(genresData), []);
 
-  const uniqueWatchlistTags = useMemo(() => {
-    const tags = new Set(watchlist.map(item => item.tag));
-    return ['all', 'any', ...Array.from(tags).sort()];
-  }, [watchlist]);
+  const uniqueWatchlistTags = useMemo(
+    () => buildWatchlistTagOptions(watchlist),
+    [watchlist],
+  );
 
   const filteredMovies = useMemo(() => {
-    let filtered = movies;
-    
-    // Filter by watchlist
-    if (watchlistFilter !== 'all') {
-      const watchlistMovieIds = watchlistFilter === 'any'
-        ? watchlist.map(item => item.movie.id)
-        : watchlist.filter(item => item.tag === watchlistFilter).map(item => item.movie.id);
-      filtered = filtered.filter(movie => watchlistMovieIds.includes(movie.id));
-    }
-    
-    // Filter by seen status
-    if (seenFilter === 'seen') {
-      filtered = filtered.filter(movie => seenMovies.find(a => a.id === movie.id));
-    } else if (seenFilter === 'unseen') {
-      filtered = filtered.filter(movie => !seenMovies.find(a => a.id === movie.id));
-    }
-    
-    // Don't filter by genre here - it's already filtered on the backend
-    
+    let filtered = filterByWatchlist(movies, watchlistFilter, watchlist);
+    filtered = filterBySeenStatus(filtered, seenFilter, seenMovies);
     return filtered;
   }, [movies, seenFilter, seenMovies, watchlistFilter, watchlist]);
 

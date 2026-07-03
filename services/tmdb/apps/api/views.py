@@ -293,6 +293,9 @@ def index_meilisearch(request):
 
 
 def search_movies(request, query):
+    query = query.strip()
+    if not query or len(query) > 200:
+        return HttpResponse(json.dumps({"hits": []}), content_type='application/json')
     index = client.index("movies")
     return HttpResponse(json.dumps(index.search(query)), content_type='application/json')
 

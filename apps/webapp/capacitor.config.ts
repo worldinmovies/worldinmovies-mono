@@ -1,12 +1,13 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
+const isDev = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
+
 const config: CapacitorConfig = {
   appId: 'worldinmovies.labb.site',
   appName: 'World in Movies',
   webDir: 'dist',
   server: {
-    //url: 'http://192.168.1.37:8081',
-    cleartext: true
+    cleartext: isDev,
   },
   plugins: {
     SplashScreen: {

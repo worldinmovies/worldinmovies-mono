@@ -49,3 +49,7 @@ playwright-report/
 # Helm sub-chart tarballs (downloaded by `helm dep update`)
 charts/*/charts/
 charts/*/Chart.lock
+
+# Nginx dev certificates — generate via scripts/generate-dev-certs.sh
+apps/webapp/nginx/certs/*.pem
+apps/webapp/nginx/certs/live/

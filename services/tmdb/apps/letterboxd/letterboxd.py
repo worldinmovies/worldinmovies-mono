@@ -1,10 +1,14 @@
 import csv
+from apps.app.helper import sanitize_csv_cell
 from apps.app.meilisearch_client import client
 from apps.app.models import Movie
 
 def parse_user_watched(file):
     index = client.index("movies")
-    csv_as_dicts = csv.DictReader(file.read().decode('utf8').splitlines())
+    content = file.read()
+    if isinstance(content, bytes):
+        content = content.decode('utf8')
+    csv_as_dicts = csv.DictReader(content.splitlines())
     result = {'found': {}, 'not_found': []}
 
     # collect ids from Meili hits (we'll try to detect what field contains the id)
@@ -27,8 +31,8 @@ def parse_user_watched(file):
         return hits or []
 
     for row in csv_as_dicts:
-        title = row['Name'].strip()
-        year = row['Year'].strip()
+        title = sanitize_csv_cell(row['Name'].strip())
+        year = sanitize_csv_cell(row['Year'].strip())
         #print(f"\nSearching for: title={title!r}, year={year!r}")
 
         # Try 1: filter by year (best case) — requires year to be filterable & present in documents

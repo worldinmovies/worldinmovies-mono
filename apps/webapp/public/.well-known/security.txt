@@ -1,0 +1,3 @@
+Contact: mailto:security@worldinmovies.labb.site
+Preferred-Languages: en
+Canonical: https://worldinmovies.labb.site/.well-known/security.txt

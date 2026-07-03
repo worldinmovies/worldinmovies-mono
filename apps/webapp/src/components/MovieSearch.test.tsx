@@ -1,11 +1,12 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 import { MovieSearch } from '@/components/MovieSearch';
 import { Movie } from '@/lib/models';
 
 const mockMovies: Movie[] = [
-  { id: 1, title: 'Akira', year: 1988, country: 'Japan', director: 'Otomo', rating: 8.5, genres: ['Animation'], poster: '', description: '' },
-  { id: 2, title: 'Seven Samurai', year: 1954, country: 'Japan', director: 'Kurosawa', rating: 9.0, genres: ['Drama'], poster: '', description: '' },
+  { id: 1, title: 'Akira', year: 1988, country: 'Japan', countryCode: 'jp', countryFlag: '', director: 'Otomo', rating: 8.5, genres: ['Animation'], poster: '', description: '' },
+  { id: 2, title: 'Seven Samurai', year: 1954, country: 'Japan', countryCode: 'jp', countryFlag: '', director: 'Kurosawa', rating: 9.0, genres: ['Drama'], poster: '', description: '' },
 ];
 
 /** Create a fetch mock response */

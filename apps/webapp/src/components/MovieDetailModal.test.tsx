@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { MovieDetailModal } from '@/components/MovieDetailModal';
@@ -11,7 +12,6 @@ const mockMovie: Movie = {
   countryCode: 'jp',
   countryFlag: 'https://flagcdn.com/16x12/jp.png',
   director: 'Katsuhiro Otomo',
-  directors: 'Katsuhiro Otomo',
   rating: 8.5,
   genres: ['Animation'],
   poster: 'https://image.tmdb.org/t/p/w300/akira.jpg',

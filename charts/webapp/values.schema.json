@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "secrets": {
+      "type": "object",
+      "description": "Secret values — must not contain REPLACE_ME placeholder",
+      "properties": {
+        "SENTRY_DSN": {
+          "type": "string",
+          "pattern": "^(?!REPLACE_ME).*"
+        }
+      }
+    }
+  }
+}

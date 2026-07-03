@@ -20,9 +20,9 @@ spec:
         name: {{ .Release.Name }}
     spec:
       securityContext:
-        runAsUser: 999
-        runAsGroup: 999
-        fsGroup: 999
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
       initContainers:
         - name: copy-app
           image: {{ printf "%s:%s" .Values.image.repository .Values.image.tag }}

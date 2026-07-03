@@ -196,3 +196,9 @@ def index_movies(chunk):
     except Exception as e:
         log(message="Failed to index due to error: %s" % e, e=e)
 
+
+@shared_task(bind=True, max_retries=0)
+def ping_task(self):
+    """Simple ping/pong task for Celery connectivity verification."""
+    return 'pong'
+

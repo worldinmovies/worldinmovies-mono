@@ -36,7 +36,7 @@ This document contains instructions for agents (AI and human) working on the `wo
   - `integration-test`: Docker-based Playwright suite
   - `build-*`: Multi-arch (amd64/arm64) Docker builds
   - `publish-charts`: Packages and publishes Helm charts to `ghcr.io/worldinmovies/charts` on push to `main` with `charts/**` changes
-- **Deployment**: Manual deployment via `workflow_dispatch` in `.github/workflows/deploy.yml`. Uses WireGuard SSH tunnel to the home server for `git pull` and `docker compose up`.
+- **Deployment**: GitOps via FluxCD on a k3s cluster. Images are built by CI/Release workflows, Renovate in fleet-infra updates image tags in HelmRelease values, and Flux reconciles automatically.
 
 ## 🎨 Helm Charts
 

@@ -100,7 +100,7 @@ describe('useSEO hook', () => {
           config: {
             title: 'OG Test',
             description: 'OG Description',
-            ogType: 'article',
+            ogType: 'article' as const,
             ogImage: 'https://example.com/image.jpg',
           },
         },
@@ -220,14 +220,14 @@ describe('useSEO hook', () => {
   describe('ogType variants', () => {
     it('should handle ogType "profile"', () => {
       renderHook(({ config }) => useSEO(config), {
-        initialProps: { config: { title: 'Test', description: 'Desc', ogType: 'profile' } },
+        initialProps: { config: { title: 'Test', description: 'Desc', ogType: 'profile' as const } },
       });
       expect(document.querySelector('meta[property="og:type"]')?.getAttribute('content')).toBe('profile');
     });
 
     it('should handle ogType "video"', () => {
       renderHook(({ config }) => useSEO(config), {
-        initialProps: { config: { title: 'Test', description: 'Desc', ogType: 'video' } },
+        initialProps: { config: { title: 'Test', description: 'Desc', ogType: 'video' as const } },
       });
       expect(document.querySelector('meta[property="og:type"]')?.getAttribute('content')).toBe('video');
     });

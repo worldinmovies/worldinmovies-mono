@@ -143,12 +143,12 @@ git push --tags
 
 ### Missing from original integration-tests repo (intentionally)
 - `.github/workflows/IT.yml` → superseded by monorepo `ci.yml`
-- `.github/workflows/deploy.yml` → superseded by monorepo `deploy.yml`
+- `.github/workflows/deploy.yml` → superseded by GitOps (FluxCD + Renovate in fleet-infra)
 
 ### Files in monorepo but half-finished (all fixed ✅)
 | File | Problem | Fix |
 |------|---------|-----|
-| `.github/workflows/deploy.yml` | All triggers commented out | Activated workflow_dispatch ✅ |
+| `.github/workflows/deploy.yml` | WireGuard SSH deploy (deprecated) | Removed — GitOps via FluxCD replaces it ✅ |
 | `tests/e2e/playwright.config.ts` | `testDir` pointed into cypress/ dir | Changed to `./playwright` ✅ |
 | `tests/e2e/package.json` | Cypress installed but unused | Removed Cypress, kept Playwright + Artillery ✅ |
 | `apps/webapp/package.json` | Sentry version seeming mismatch | Verified correct alignment ✅ |

@@ -1,6 +1,6 @@
+import { afterEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
-import { vi } from 'vitest';
 
 // Mock Capacitor — getPlatform is a vi.fn so tests can override it
 const mockGetPlatform = vi.fn(() => 'web');
@@ -80,18 +80,21 @@ vi.mock('sonner', () => ({
   Toaster: () => null,
 }));
 
-// Mock recharts
+// Recharts mock — SVG-friendly elements to avoid React 19 SVG-prop type warnings
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const SvgEl = ({ children, ...rest }: any) => <svg {...rest}>{children}</svg>;
+
 vi.mock('recharts', () => ({
   BarChart: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  Bar: ({ dataKey, fill }: { dataKey: string; fill: string }) => <div data-key={dataKey} fill={fill} />,
+  Bar: ({ dataKey, fill }: { dataKey: string; fill: string }) => <SvgEl data-key={dataKey} fill={fill} />,
   PieChart: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  Pie: ({ dataKey }: { dataKey: string }) => <div data-key={dataKey} />,
-  Cell: ({ fill }: { fill: string }) => <div fill={fill} />,
-  XAxis: ({ dataKey }: { dataKey: string }) => <div data-key={dataKey} />,
-  YAxis: () => <div />,
-  CartesianGrid: ({ strokeDasharray }: { strokeDasharray: string }) => <div stroke={strokeDasharray} />,
+  Pie: ({ dataKey }: { dataKey: string }) => <SvgEl data-key={dataKey} />,
+  Cell: ({ fill }: { fill: string }) => <SvgEl fill={fill} />,
+  XAxis: ({ dataKey }: { dataKey: string }) => <SvgEl data-key={dataKey} />,
+  YAxis: () => <SvgEl />,
+  CartesianGrid: ({ strokeDasharray }: { strokeDasharray: string }) => <SvgEl stroke={strokeDasharray} />,
   Tooltip: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  Legend: () => <div />,
+  Legend: () => <SvgEl />,
   ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
