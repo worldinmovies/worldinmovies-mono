@@ -93,6 +93,10 @@ jobs:
           platform=${{ matrix.platform }}
           echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV
       - uses: actions/checkout@v4
+      - name: Create .env file for build
+        run: |
+          echo "VITE_TMDB_URL=/tmdb" > apps/webapp/.env
+          echo "VITE_SENTRY_TOKEN=" >> apps/webapp/.env
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v5
