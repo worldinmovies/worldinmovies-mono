@@ -1,10 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useWebSocket } from '@/hooks/useWebSocket';
 
 // Set up config mock at top level (must be before imports)
 vi.mock('@/lib/config', () => ({
-  BACKEND_URL: 'http://localhost:3000',
+  getBackendUrl: () => 'http://localhost:3000',
 }));
 
 describe('useWebSocket hook', () => {
@@ -60,9 +61,15 @@ describe('useWebSocket hook', () => {
         set(v: number) { mockWebSocketInstance.readyState = v; },
       });
     });
-    MockWebSocketClass.OPEN = 1;
-    MockWebSocketClass.CLOSING = 2;
-    MockWebSocketClass.CLOSED = 3;
+    // MockWebSocketClass is constructor-typed; .OPEN/CLOSING/CLOSED not on the type
+     
+    (MockWebSocketClass as any).OPEN = 1;
+    // MockWebSocketClass is constructor-typed; .OPEN/CLOSING/CLOSED not on the type
+     
+    (MockWebSocketClass as any).CLOSING = 2;
+    // MockWebSocketClass is constructor-typed; .OPEN/CLOSING/CLOSED not on the type
+     
+    (MockWebSocketClass as any).CLOSED = 3;
     vi.stubGlobal('WebSocket', MockWebSocketClass);
   });
 
@@ -71,7 +78,7 @@ describe('useWebSocket hook', () => {
     vi.useRealTimers();
   });
 
-  it('should connect to WebSocket when BACKEND_URL is set', () => {
+  it('should connect to WebSocket when getBackendUrl() is set', () => {
     const { result } = renderHook(() => useWebSocket());
 
     // Trigger onopen
@@ -206,5 +213,31 @@ describe('useWebSocket hook', () => {
     unmount();
 
     expect(mockWebSocketInstance.close).toHaveBeenCalled();
+  });
+
+  it('should use custom retryDelay on reconnect', () => {
+    vi.useFakeTimers();
+
+    const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout');
+
+    const { result } = renderHook(() =>
+      useWebSocket(undefined, { retryDelay: 50 }),
+    );
+
+    act(() => {
+      triggerEvent('open');
+    });
+
+    expect(result.current.connected).toBe(true);
+
+    act(() => {
+      triggerEvent('close');
+    });
+
+    expect(result.current.connected).toBe(false);
+    expect(setTimeoutSpy).toHaveBeenLastCalledWith(expect.any(Function), 50);
+
+    setTimeoutSpy.mockRestore();
+    vi.useRealTimers();
   });
 });

@@ -1,25 +1,17 @@
 import { useEffect, useState } from "react";
-import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Film, Globe, Calendar, TrendingUp } from "lucide-react";
-import { Movie } from "@/lib/models";
-
-interface ImportedMovie {
-  id: number;
-  title: string;
-  year: number;
-  seen: boolean;
-  source: "trakt" | "imdb";
-  country_code: string
-}
-
-interface AnalyticsData {
-  totalMovies: number;
-  countryCounts: { country: string; count: number }[];
-  decadeCounts: { decade: string; count: number }[];
-  //genreCounts: { genre: string; count: number }[];
-  //averageRating: number;
-}
+import { Film, Globe, Calendar } from "lucide-react";
+import { calculateAnalytics, AnalyticsData } from "@/lib/analytics";
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--cinema-gold))', 'hsl(var(--cinema-silver))'];
 
@@ -28,80 +20,26 @@ export default function Analytics() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const calculateAnalytics = () => {
+    const run = () => {
       const saved = localStorage.getItem('seenMovies');
       if (!saved) {
         setLoading(false);
         return;
       }
-
-      const seenMovies: ImportedMovie[] = JSON.parse(saved);
-      
+      const seenMovies = JSON.parse(saved);
       if (seenMovies.length === 0) {
         setLoading(false);
         return;
       }
-      // Calculate country counts
-      const countryMap = new Map<string, number>();
-      seenMovies.forEach(movie => {
-        const count = countryMap.get(movie.country_code) || 0;
-        countryMap.set(movie.country_code, count + 1);
-      });
-      const countryCounts = Array.from(countryMap.entries())
-        .map(([country, count]) => ({ country, count }))
-        .sort((a, b) => b.count - a.count);
-
-      // Calculate decade counts
-      const decadeMap = new Map<string, number>();
-      seenMovies.forEach(movie => {
-        const decade = Math.floor(movie.year / 10) * 10;
-        const decadeLabel = `${decade}s`;
-        const count = decadeMap.get(decadeLabel) || 0;
-        decadeMap.set(decadeLabel, count + 1);
-      });
-      const decadeCounts = Array.from(decadeMap.entries())
-        .map(([decade, count]) => ({ decade, count }))
-        .sort((a, b) => parseInt(a.decade) - parseInt(b.decade));
-
-      // Calculate genre counts
-      const genreMap = new Map<string, number>();
-      /*
-      seenMovies.forEach(movie => {
-        const genres = movie.genres
-        genres?.forEach(genre => {
-          if (genre) {
-            const count = genreMap.get(genre) || 0;
-            genreMap.set(genre, count + 1);
-          }
-        });
-      });
-
-      const genreCounts = Array.from(genreMap.entries())
-        .map(([genre, count]) => ({ genre, count }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 8);
-      */
-     /*
-      // Calculate average rating
-      const totalRating = seenMovies.reduce((sum, movie) => sum + movie.rating, 0);
-      const averageRating = totalRating / seenMovies.length;
-      */
-      setAnalytics({
-        totalMovies: seenMovies.length,
-        countryCounts,
-        decadeCounts
-        //genreCounts,
-        //averageRating,
-      });
-      
+      setAnalytics(calculateAnalytics(seenMovies));
       setLoading(false);
     };
 
-    calculateAnalytics();
+    run();
 
     // Listen to custom event for real-time updates
     const handleSeenChanged = () => {
-      calculateAnalytics();
+      run();
     };
 
     window.addEventListener('seenMoviesChanged', handleSeenChanged as EventListener);

@@ -6,7 +6,7 @@ import { Terminal, Server, Database, LucideLogs } from "lucide-react";
 import { toast } from "sonner";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { useStatus } from "@/hooks/useStatus";
-import { BACKEND_URL } from "@/lib/config";
+import { getBackendUrl } from "@/lib/config";
 
 const Admin = () => {
   const { status } = useStatus();
@@ -57,7 +57,7 @@ const Admin = () => {
   };
 
   const triggerBackend = (path: string) => {
-    fetch(`${BACKEND_URL}${path}`)
+    fetch(`${getBackendUrl()}${path}`)
       .catch(error => toast.error(`Could not trigger ${path}: error=${JSON.stringify(error)}`))
       .then((response: Response) => {
         const data: string = response.json() ? JSON.stringify(response.json()) : JSON.stringify(response.body);

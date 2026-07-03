@@ -1,10 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { Movie, BackendMovie, DiscoverMovie } from "@/lib/models";
-import { BACKEND_URL } from "@/lib/config";
+import { getBackendUrl } from "@/lib/config";
+import { shuffleArray, transferDiscoverMovie, transferBackendMovie } from "@/lib/transforms";
 import * as Sentry from "@sentry/react";
-
-const regionNames = new Intl.DisplayNames(['en'], {type: 'region'});
 
 // Mock data for top international films
 const MOVIE_DATABASE: Movie[] = [
@@ -15,15 +14,6 @@ export const useMovies = (selectedCountry?: string | null) => {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-
-  const shuffleArray = (array: Movie[]) => {
-    const shuffled = [...array];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled;
-  };
 
   // Add reset function
   const resetMovies = useCallback(() => {
@@ -44,7 +34,7 @@ export const useMovies = (selectedCountry?: string | null) => {
       }
 
       try {
-        if (BACKEND_URL) {
+        if (getBackendUrl()) {
           // Fetch from backend API
           let url: string;
           // Use skipOverride if provided, otherwise use current movies.length
@@ -59,9 +49,9 @@ export const useMovies = (selectedCountry?: string | null) => {
           const limit = 8;
           if (countryCode || selectedCountry) {
             const code = countryCode || selectedCountry;
-            url = `${BACKEND_URL}/view/best/${code.toUpperCase()}?skip=${skipMovies}${genre_match}&limit=${limit}`;
+            url = `${getBackendUrl()}/view/best/${code.toUpperCase()}?skip=${skipMovies}${genre_match}&limit=${limit}`;
           } else {
-            url = `${BACKEND_URL}/view/random/best/${skipMovies}?seed=${seed}${genre_match}&limit=${limit}`;
+            url = `${getBackendUrl()}/view/random/best/${skipMovies}?seed=${seed}${genre_match}&limit=${limit}`;
           }
 
           const response = await fetch(url);
@@ -117,57 +107,15 @@ export const useMovies = (selectedCountry?: string | null) => {
     [loading, hasMore, movies, selectedCountry],
   );
 
-  const transfer = (m: BackendMovie): Movie => {
-    return {
-      id: m._id,
-      title: m.original_title,
-      year: m.year,
-      country: m.estimated_country ? regionNames.of(m.estimated_country) : "Unknown",
-      countryCode: m.estimated_country || "",
-      countryFlag: m.estimated_country
-        ? `https://flagcdn.com/16x12/${m.estimated_country.toLowerCase()}.png`
-        : "",
-      director: m.credits?.crew?.filter(c => c.job === 'Director'),
-      rating:
-        m.imdb_vote_average > 0 ? m.imdb_vote_average : m.vote_average,
-      genres: m.genres?.map(genre => genre.name),
-      poster: m.poster_path
-        ? `https://image.tmdb.org/t/p/w300${m.poster_path}`
-        : "",
-      description: m.overview,
-    }
-  }
-
-  const transferDiscoverMovie = (m: DiscoverMovie): Movie => {
-    return {
-      id: m._id,
-      title: m.original_title,
-      year: m.year,
-      country: m.estimated_country ? regionNames.of(m.estimated_country) : "Unknown",
-      countryCode: m.estimated_country || "",
-      countryFlag: m.estimated_country
-        ? `https://flagcdn.com/16x12/${m.estimated_country.toLowerCase()}.png`
-        : "",
-      director: m.director,
-      rating:
-        m.imdb_vote_average > 0 ? m.imdb_vote_average : m.vote_average,
-      genres: m.genres?.map(genre => genre),
-      poster: m.poster_path
-        ? `https://image.tmdb.org/t/p/w300${m.poster_path}`
-        : "",
-      description: m.overview,
-    }
-  }
-
   const loadMoviesForCountry = useCallback(async (countryCode: string) => {
     setMovies([]);
     setHasMore(true);
     setLoading(true);
 
     try {
-      if (BACKEND_URL) {
+      if (getBackendUrl()) {
         const limit = 10;
-        const url = `${BACKEND_URL}/view/best/${countryCode.toUpperCase()}?skip=0&limit=${limit}`;
+        const url = `${getBackendUrl()}/view/best/${countryCode.toUpperCase()}?skip=0&limit=${limit}`;
         const response = await fetch(url);
         if (response.ok) {
           const newMovies = await response.json();
@@ -198,17 +146,17 @@ export const useMovies = (selectedCountry?: string | null) => {
 
   const fetchMovieDetails = useCallback(
     async (movieId: number) => {
-      if (!BACKEND_URL) {
+      if (!getBackendUrl()) {
         // Return existing movie data if no backend
         return movies.find((m) => m.id === movieId);
       }
 
       try {
-        const response = await fetch(`${BACKEND_URL}/movie/${movieId}`);
+        const response = await fetch(`${getBackendUrl()}/movie/${movieId}`);
         if (response.ok) {
           const data: BackendMovie = await response.json();
           if(data) {
-            return transfer(data);
+            return transferBackendMovie(data);
           } else {
             return null;
           }

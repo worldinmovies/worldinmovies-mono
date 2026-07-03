@@ -1,0 +1,24 @@
+[project]
+name = "worldinmovies-tmdb"
+requires-python = ">=3.12"
+
+[tool.ruff]
+# Target Python version
+target-version = "py312"
+
+# Files to lint
+include = ["apps/", "settings/", "manage.py"]
+
+# Enable rules: pycodestyle (E), pyflakes (F), isort (I), pydocstyle (D - conventions only)
+select = ["E", "F", "I"]
+ignore = [
+    "E501",  # line too long — Django models have long field defs
+    "E402",  # module-level import not at top — needed for settings env setup
+]
+
+[tool.ruff.lint.per-file-ignores]
+"settings/*.py" = ["E402"]
+"manage.py" = ["E402"]
+
+[tool.ruff.format]
+quote-style = "single"

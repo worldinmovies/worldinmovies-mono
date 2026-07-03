@@ -52,3 +52,6 @@ services/tmdb/db.sqlite3
 
 # test data large assets
 services/tmdb/testdata/*.gz
+
+# Nginx dev certificates (not needed inside containers)
+apps/webapp/nginx/certs/

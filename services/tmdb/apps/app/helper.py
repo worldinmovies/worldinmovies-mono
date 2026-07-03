@@ -11,6 +11,13 @@ from channels.layers import get_channel_layer
 from apps.app.db_models import Genre, SpokenLanguage, ProductionCountries
 
 
+def sanitize_csv_cell(value: str) -> str:
+    """Prevent CSV formula injection by prefixing cells starting with =, +, -, or @."""
+    if value and value[0] in ('=', '+', '-', '@'):
+        return "'" + value
+    return value
+
+
 def convert_country_code(country_code):
     code_dict = {
         'AN': ['BQ', 'CW', 'SX'],  # The Netherlands Antilles was divided into

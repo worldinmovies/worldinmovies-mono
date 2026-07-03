@@ -19,9 +19,9 @@ vi.mock('sonner', () => ({
   },
 }));
 
-// Mock BACKEND_URL
+// Mock getBackendUrl
 vi.mock('@/lib/config', () => ({
-  BACKEND_URL: 'http://localhost:3000',
+  getBackendUrl: () => 'http://localhost:3000',
 }));
 
 describe('useMovies hook', () => {

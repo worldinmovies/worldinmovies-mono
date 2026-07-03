@@ -4,7 +4,7 @@ import { useStatus } from '@/hooks/useStatus';
 
 // Mock config module at top level - value inlined since vi.mock is hoisted
 vi.mock('@/lib/config', () => ({
-  BACKEND_URL: 'http://localhost:3000',
+  getBackendUrl: () => 'http://localhost:3000',
 }));
 
 const mockBackendUrl = 'http://localhost:3000';

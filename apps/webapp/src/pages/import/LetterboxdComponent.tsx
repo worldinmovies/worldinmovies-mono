@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { BACKEND_URL } from "@/lib/config";
+import { getBackendUrl } from "@/lib/config";
 import { ImportedMovie } from "@/lib/models";
 import { Download, Upload } from "lucide-react";
 import React, { useState } from "react";
@@ -59,8 +59,8 @@ export const LetterboxdImport = ({isImporting, setIsImporting, addToLog}: Letter
       addToLog("Parsing data from Letterboxd");
       const data = new FormData()
       data.append('file', selectedFile)
-      if(BACKEND_URL) {
-        fetch(`${BACKEND_URL}/letterboxd/ratings`,
+      if(getBackendUrl()) {
+        fetch(`${getBackendUrl()}/letterboxd/ratings`,
             {
                 method: 'POST',
                 body: data
