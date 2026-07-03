@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { GlobeMap } from '@/components/Globe';
@@ -10,7 +11,8 @@ vi.mock('react-globe.gl', () => ({
 // Mock d3-scale
 vi.mock('d3-scale', () => ({
   scaleSequentialSqrt: () => {
-    const fn = vi.fn(() => '#fff');
+     
+    const fn: any = vi.fn(() => '#fff');
     fn.domain = vi.fn().mockReturnThis();
     return fn;
   },

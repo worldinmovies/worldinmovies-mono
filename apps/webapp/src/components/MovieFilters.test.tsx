@@ -4,7 +4,7 @@ import { MovieFilters } from '@/components/MovieFilters';
 import { Movie } from '@/lib/models';
 
 const mockMovies: Movie[] = [
-  { id: 1, title: 'Akira', year: 1988, country: 'Japan', director: 'Otomo', rating: 8.5, genres: ['Animation'], poster: '', description: '' },
+  { id: 1, title: 'Akira', year: 1988, country: 'Japan', countryCode: 'jp', countryFlag: '', director: 'Otomo', rating: 8.5, genres: ['Animation'], poster: '', description: '' },
 ];
 
 const mockCountries = [

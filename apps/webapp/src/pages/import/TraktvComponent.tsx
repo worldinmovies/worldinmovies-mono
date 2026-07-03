@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import * as Sentry from "@sentry/react";
 import { ImportedMovie } from "@/lib/models";
 import { Capacitor } from "@capacitor/core";
-import { App, PluginListenerHandle } from '@capacitor/app';
+import { App } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
 import { Preferences } from '@capacitor/preferences';
 import { useNavigate } from "react-router-dom";
@@ -263,7 +263,7 @@ export const TraktImport = () => {
   useEffect(() => {
     if (!isMobileApp) return;
 
-    let listener: PluginListenerHandle | null = null;
+    let listener: { remove: () => void } | null = null;
     (async () => {
       listener = await App.addListener('appUrlOpen', (data) => {
         if (data.url.startsWith('worldinmovie://trakt-callback')) {

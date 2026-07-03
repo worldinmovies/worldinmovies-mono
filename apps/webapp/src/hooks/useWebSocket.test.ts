@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useWebSocket } from '@/hooks/useWebSocket';
@@ -60,9 +61,15 @@ describe('useWebSocket hook', () => {
         set(v: number) { mockWebSocketInstance.readyState = v; },
       });
     });
-    MockWebSocketClass.OPEN = 1;
-    MockWebSocketClass.CLOSING = 2;
-    MockWebSocketClass.CLOSED = 3;
+    // MockWebSocketClass is constructor-typed; .OPEN/CLOSING/CLOSED not on the type
+     
+    (MockWebSocketClass as any).OPEN = 1;
+    // MockWebSocketClass is constructor-typed; .OPEN/CLOSING/CLOSED not on the type
+     
+    (MockWebSocketClass as any).CLOSING = 2;
+    // MockWebSocketClass is constructor-typed; .OPEN/CLOSING/CLOSED not on the type
+     
+    (MockWebSocketClass as any).CLOSED = 3;
     vi.stubGlobal('WebSocket', MockWebSocketClass);
   });
 
