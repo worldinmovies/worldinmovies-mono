@@ -56,7 +56,10 @@ export const FreeWorldMap = ({ availableCountries, selectedCountry, onCountrySel
             title="Movie Countries"
             value-suffix="movies"
             size="xl"
-            data={mapData}
+            // ISOCode constraint from react-world-map; no clean intersection for country+value types
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            data={mapData as any}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             onClickFunction={(event: any) => {
               const countryData = mapData.find(d => d.country === event.countryCode);
               if (countryData) {
@@ -64,6 +67,7 @@ export const FreeWorldMap = ({ availableCountries, selectedCountry, onCountrySel
                 onCountrySelect(isSelected ? null : countryData.label);
               }
             }}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             styleFunction={(context: any) => {
               const isSelected = selectedCountry === context.countryValue?.label;
               const hasSeen = context.countryValue?.hasSeen;

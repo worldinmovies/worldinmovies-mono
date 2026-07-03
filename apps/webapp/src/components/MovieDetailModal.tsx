@@ -24,8 +24,14 @@ interface WatchlistItem {
 }
 
 export const MovieDetailModal = ({ movie, isOpen, onClose, movies, currentIndex, onNavigate, isLoading }: MovieDetailModalProps) => {
-  const [seenMovies, setSeenMovies] = useState<Movie[]>([]);
-  const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
+  const [seenMovies, setSeenMovies] = useState<Movie[]>(() => {
+    const saved = localStorage.getItem('seenMovies');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [watchlist, setWatchlist] = useState<WatchlistItem[]>(() => {
+    const savedWatchlist = localStorage.getItem('watchlist');
+    return savedWatchlist ? JSON.parse(savedWatchlist) : [];
+  });
   const [showCustomTagInput, setShowCustomTagInput] = useState(false);
   const [customTag, setCustomTag] = useState("");
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -33,20 +39,6 @@ export const MovieDetailModal = ({ movie, isOpen, onClose, movies, currentIndex,
   
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isLongPressRef = useRef(false);
-
-  useEffect(() => {
-    // Load seen movies from localStorage
-    const saved = localStorage.getItem('seenMovies');
-    if (saved) {
-      setSeenMovies(JSON.parse(saved));
-    }
-    
-    // Load watchlist from localStorage
-    const savedWatchlist = localStorage.getItem('watchlist');
-    if (savedWatchlist) {
-      setWatchlist(JSON.parse(savedWatchlist));
-    }
-  }, []);
 
   useEffect(() => {
     // Save seen movies to localStorage and dispatch event
@@ -358,7 +350,7 @@ export const MovieDetailModal = ({ movie, isOpen, onClose, movies, currentIndex,
 
             <div className="flex items-center gap-2 text-muted-foreground">
               <User className="w-4 h-4" />
-              <span>Directed by <span className="text-foreground font-medium">{movie.directors}</span></span>
+              <span>Directed by <span className="text-foreground font-medium">{movie.director}</span></span>
             </div>
 
             <div className="space-y-2">

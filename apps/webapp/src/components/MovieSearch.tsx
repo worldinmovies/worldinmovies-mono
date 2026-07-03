@@ -3,7 +3,7 @@ import { Search, Loader2 } from "lucide-react";
 import { Input } from "./ui/input";
 import { Command, CommandGroup, CommandItem, CommandList } from "./ui/command";
 import { Movie } from "@/lib/models";
-import { BACKEND_URL } from "@/lib/config";
+import { getBackendUrl } from "@/lib/config";
 import * as Sentry from "@sentry/react";
 
 interface SearchResponse {
@@ -46,7 +46,7 @@ export const MovieSearch = ({ movies, onMovieSelect }: MovieSearchProps) => {
     const debounceTimer = setTimeout(async () => {
       setIsSearching(true);
       try {
-        const response = await fetch(`${BACKEND_URL}/search/movies/${encodeURIComponent(searchQuery)}`);
+        const response = await fetch(`${getBackendUrl()}/search/movies/${encodeURIComponent(searchQuery)}`);
         if (response.ok && response.headers.get('content-type')?.includes('application/json')) {
           const data: SearchResponse = await response.json();
           setSearchSuggestions(data.hits.sort((a,b) => b.weighted_rating - a.weighted_rating).slice(0, 8));

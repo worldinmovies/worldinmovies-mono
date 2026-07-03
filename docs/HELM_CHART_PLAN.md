@@ -194,7 +194,7 @@ After first successful publish, update `~/workspace/personal/fleet-infra/`:
 - [ ] CI dry-run: push to a feature branch, verify the publish workflow can lint/package (push step skipped unless on main)
 - [ ] fleet-infra HelmRelease can reconcile after charts are published
 - [ ] Existing `pnpm test` still passes
-- [ ] Existing `deploy.yml` (Docker Compose) still works unchanged
+- [ ] ~~Existing `deploy.yml` (Docker Compose)~~ — removed, superseded by GitOps (FluxCD + Renovate)
 - [ ] Document in `AGENTS.md` where charts live and how publishing works
 
 ## Future Considerations (Not in Scope for this Issue)

@@ -1,4 +1,4 @@
-FROM python:3-alpine AS base
+FROM python:3-alpine@sha256:26730869004e2b9c4b9ad09cab8625e81d256d1ce97e72df5520e806b1709f92 AS base
 
 FROM base AS builder
 
@@ -24,13 +24,15 @@ ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
 COPY --from=builder /install /usr/local
-RUN apk --no-cache add libpq curl
+RUN apk --no-cache add libpq curl && adduser -D -u 1000 appuser
 
 COPY services/tmdb/ /app/services/tmdb/
 
 WORKDIR /app/services/tmdb
 
 # Create SQLite database file with proper permissions
-RUN touch db.sqlite3 && chmod 666 db.sqlite3
+RUN touch db.sqlite3 && chown appuser:appuser db.sqlite3
+
+USER appuser
 
 ENTRYPOINT ["/bin/sh", "-c", "python manage.py migrate --noinput && python manage.py crontab add && crond & hypercorn --config=gunicorn.config.py settings.asgi:application"]

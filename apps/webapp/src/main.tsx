@@ -27,18 +27,19 @@ if(sentryDsn) {
       // Set your dist version, such as "1"
       dist: "1",
       // Logs requires @sentry/capacitor 2.0.0 or newer.
-      _experiments: {
-        enableLogs: true,
+      // _experiments type differs between @sentry/capacitor v1 vs v2
+      _experiments: ({
         beforeSendLog: (log) => {
           // Add custom filters to logs.
           return log;
         },
-      },
+        enableLogs: true,
+      } as any), // eslint-disable-line @typescript-eslint/no-explicit-any
       integrations: [
       ],
     },
-    // Forward the init method from @sentry/react
-    SentryReact.init,
+    // SentryReact.init typing doesn't match Sentry.init callback signature
+    SentryReact.init as any, // eslint-disable-line @typescript-eslint/no-explicit-any
   );
 }
 

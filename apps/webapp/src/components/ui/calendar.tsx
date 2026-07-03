@@ -40,11 +40,12 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
         day_range_middle: "aria-selected:bg-accent aria-selected:text-accent-foreground",
         day_hidden: "invisible",
         ...classNames,
-      }}
+      } as Record<string, string>}
+      // RDI v10 uses Chevron instead of IconLeft; outer cast covers inner prop types
+       
       components={{
-        IconLeft: ({ ..._props }) => <ChevronLeft className="h-4 w-4" />,
-        IconRight: ({ ..._props }) => <ChevronRight className="h-4 w-4" />,
-      }}
+        Chevron: ({ ..._props }) => <ChevronLeft className="h-4 w-4" />,
+      } as any} // eslint-disable-line @typescript-eslint/no-explicit-any
       {...props}
     />
   );

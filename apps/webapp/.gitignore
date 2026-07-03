@@ -27,3 +27,6 @@ dist-ssr
 #ios/
 
 .env
+
+# Admin htpasswd — auto-generated at runtime if missing
+nginx/.htpasswd

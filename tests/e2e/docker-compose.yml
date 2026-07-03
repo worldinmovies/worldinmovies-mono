@@ -74,7 +74,8 @@ services:
       - TMDB_API=${TMDB_API}
       - MEILISEARCH_API_KEY=${MEILI_MASTER_KEY:-BiX78W32AeClhKF_FYfkVsFmiaJJ0amhwTPInYtHUhY}
       - SENTRY_API=${SENTRY_API_TMDB:-}
-      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-}
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-please-change-me}
+      - ADMIN_API_KEY=${ADMIN_API_KEY:-}
       - REDIS_URL=${REDIS_URL:-redis://redis}
       - MONGO_URL=${MONGO_URL:-mongo}
       - MONGO_USER=${MONGO_USER:-seppa}
@@ -103,7 +104,8 @@ services:
       - TMDB_API=${TMDB_API}
       - MEILISEARCH_API_KEY=${MEILI_MASTER_KEY:-BiX78W32AeClhKF_FYfkVsFmiaJJ0amhwTPInYtHUhY}
       - SENTRY_API=${SENTRY_API_TMDB:-}
-      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-please-change-me}
+      - ADMIN_API_KEY=${ADMIN_API_KEY:-}
       - REDIS_URL=${REDIS_URL:-redis://redis}
       - MONGO_URL=${MONGO_URL:-mongo}
       - MONGO_USER=${MONGO_USER:-seppa}
