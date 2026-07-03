@@ -12,9 +12,9 @@ Use pnpm test:ci for one-shot infrastructure.
 """
 
 import os
-from unittest import TestCase, skipIf
+from unittest import skipIf
 
-from django.test import override_settings
+from django.test import TestCase, override_settings
 
 RUN_INTEGRATION = os.environ.get('RUN_CELERY_INTEGRATION', '0') == '1'
 
