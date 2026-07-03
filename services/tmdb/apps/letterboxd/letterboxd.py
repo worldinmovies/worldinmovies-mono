@@ -5,7 +5,10 @@ from apps.app.models import Movie
 
 def parse_user_watched(file):
     index = client.index("movies")
-    csv_as_dicts = csv.DictReader(file.read().decode('utf8').splitlines())
+    content = file.read()
+    if isinstance(content, bytes):
+        content = content.decode('utf8')
+    csv_as_dicts = csv.DictReader(content.splitlines())
     result = {'found': {}, 'not_found': []}
 
     # collect ids from Meili hits (we'll try to detect what field contains the id)

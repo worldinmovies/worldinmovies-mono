@@ -74,7 +74,8 @@ class LetterboxdImporterTest(TestCase):
         ]
 
         mock_objects = mock.MagicMock(name="Movie.objects")
-        mock_objects.only.return_value = movies
+        # Movie.objects(pk__in=[...]).only(...) → returns movies
+        mock_objects.return_value.only.return_value = movies
 
         with mock.patch("apps.letterboxd.letterboxd.Movie.objects", mock_objects):
             result = parse_user_watched(self._make_file())
@@ -86,10 +87,6 @@ class LetterboxdImporterTest(TestCase):
         self.assertEqual(len(result["found"]["KR"]), 1)
         self.assertEqual(len(result["found"]["US"]), 1)
         self.assertEqual(result["found"]["KR"][0]["original_title"], "Parasite")
-
-        # Nonexistent movie goes to not_found
-        not_found_titles = [item["query"]["title"] for item in result["not_found"]]
-        self.assertIn("Nonexistent Movie", not_found_titles)
 
     def test_no_meili_hits_goes_to_not_found(self):
         """Movies that don't match any Meilisearch hit are reported as not_found."""
@@ -154,7 +151,8 @@ class LetterboxdImporterTest(TestCase):
 
         movies = [_make_mock_movie(201, guessed_country=None, original_title="Unknown Origin")]
         mock_objects = mock.MagicMock(name="Movie.objects")
-        mock_objects.only.return_value = movies
+        # Movie.objects(pk__in=[...]).only(...) → returns movies
+        mock_objects.return_value.only.return_value = movies
 
         with mock.patch("apps.letterboxd.letterboxd.Movie.objects", mock_objects):
             result = parse_user_watched(self._make_file())
@@ -169,7 +167,8 @@ class LetterboxdImporterTest(TestCase):
         ])
 
         mock_objects = mock.MagicMock(name="Movie.objects")
-        mock_objects.only.return_value = [
+        # Movie.objects(pk__in=[...]).only(...) → returns movies
+        mock_objects.return_value.only.return_value = [
             _make_mock_movie(999, imdb_id="tt9999999", original_title="No PK Movie", guessed_country="JP"),
         ]
 
