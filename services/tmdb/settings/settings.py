@@ -136,7 +136,7 @@ if environment == 'docker' or environment == 'localhost':
     mongo_url = os.environ.get('MONGO_URL', 'mongo')
     mongo_user = os.environ.get('MONGO_USER', 'seppa')
     mongo_pass = os.environ['MONGO_PASSWORD']
-    super_url = "mongodb://%s:%s@%s:27017/tmdb?authSource=tmdb" % (mongo_user, mongo_pass, mongo_url)
+    super_url = "mongodb://%s:%s@%s:27017/tmdb?authSource=admin" % (mongo_user, mongo_pass, mongo_url)
     mongoengine.connect(db='tmdb',
                         host=super_url,
                         serverSelectionTimeoutMS=3000)
