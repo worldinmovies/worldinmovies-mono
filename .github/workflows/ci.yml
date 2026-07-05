@@ -77,15 +77,16 @@ jobs:
     - name: Run tests
       run: pnpm vitest run
 
+  # Build + push multi-arch images on push to main only
   build-webapp:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     name: Build webapp Docker image
     runs-on: ubuntu-latest
     needs: [frontend-test]
     strategy:
       fail-fast: true
       matrix:
-        # Build only amd64 on PRs (faster, no QEMU emulation); full multi-arch on push
-        platform: ${{ fromJSON(github.event_name == 'pull_request' && '["linux/amd64"]' || '["linux/amd64", "linux/arm64"]') }}
+        platform: ["linux/amd64", "linux/arm64"]
     steps:
       - name: Prepare
         run: |
@@ -119,18 +120,16 @@ jobs:
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
           tags: |
-            ${{ github.event_name == 'pull_request' && format('seppaleinen/worldinmovies_webapp:pr-{0}-amd64', github.event.number) || format('seppaleinen/worldinmovies_webapp:{0}', github.sha) }}
+            seppaleinen/worldinmovies_webapp:${{ github.sha }}
           push: true
           cache-from: type=registry,ref=seppaleinen/worldinmovies_webapp:latest
           cache-to: type=inline
       - name: Export digest
-        if: github.event_name != 'pull_request'
         run: |
           mkdir -p /tmp/digests-webapp
           digest="${{ steps.build.outputs.digest }}"
           touch "/tmp/digests-webapp/${digest#sha256:}"
       - name: Upload digest
-        if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: digests-webapp-${{ env.PLATFORM_PAIR }}
@@ -139,14 +138,14 @@ jobs:
           retention-days: 1
 
   build-tmdb:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     name: Build TMDB Docker image
     runs-on: ubuntu-latest
     needs: [backend-test]
     strategy:
       fail-fast: true
       matrix:
-        # Build only amd64 on PRs (faster, no QEMU emulation); full multi-arch on push
-        platform: ${{ fromJSON(github.event_name == 'pull_request' && '["linux/amd64"]' || '["linux/amd64", "linux/arm64"]') }}
+        platform: ["linux/amd64", "linux/arm64"]
     steps:
       - name: Prepare
         run: |
@@ -176,18 +175,16 @@ jobs:
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
           tags: |
-            ${{ github.event_name == 'pull_request' && format('seppaleinen/worldinmovies_tmdb:pr-{0}-amd64', github.event.number) || format('seppaleinen/worldinmovies_tmdb:{0}', github.sha) }}
+            seppaleinen/worldinmovies_tmdb:${{ github.sha }}
           push: true
           cache-from: type=registry,ref=seppaleinen/worldinmovies_tmdb:latest
           cache-to: type=inline
       - name: Export digest
-        if: github.event_name != 'pull_request'
         run: |
           mkdir -p /tmp/digests
           digest="${{ steps.build.outputs.digest }}"
           touch "/tmp/digests/${digest#sha256:}"
       - name: Upload digest
-        if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: digests-tmdb-${{ env.PLATFORM_PAIR }}
@@ -196,7 +193,7 @@ jobs:
           retention-days: 1
 
   merge-tmdb-manifest:
-    if: github.event_name != 'pull_request'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     name: Merge multi-arch manifest
     runs-on: ubuntu-latest
     needs: [build-tmdb]
@@ -228,7 +225,7 @@ jobs:
             $(printf 'seppaleinen/worldinmovies_tmdb@sha256:%s ' *)
 
   merge-webapp-manifest:
-    if: github.event_name != 'pull_request'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     name: Merge multi-arch webapp manifest
     runs-on: ubuntu-latest
     needs: [build-webapp]
@@ -262,7 +259,7 @@ jobs:
   integration-test:
     name: Integration tests
     runs-on: ubuntu-latest
-    needs: [build-tmdb, build-webapp]
+    needs: [frontend-test, backend-test]
     steps:
     - uses: actions/checkout@v4
     - name: Install pnpm
@@ -276,10 +273,41 @@ jobs:
       run: pnpm install --frozen-lockfile --filter @worldinmovies/e2e
     - name: Install Playwright browsers
       run: pnpm --filter @worldinmovies/e2e exec playwright install chromium
+    # On PRs: build images locally (Docker Hub secrets not available on pull_request events)
+    - name: Create .env file for build
+      if: github.event_name == 'pull_request'
+      run: |
+        echo "VITE_TMDB_URL=/tmdb" > apps/webapp/.env
+        echo "VITE_SENTRY_TOKEN=" >> apps/webapp/.env
+    - name: Set up Docker Buildx
+      if: github.event_name == 'pull_request'
+      uses: docker/setup-buildx-action@v3
+    - name: Build webapp image (PRs only)
+      if: github.event_name == 'pull_request'
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: apps/webapp/Dockerfile
+        platforms: linux/amd64
+        load: true
+        tags: |
+          seppaleinen/worldinmovies_webapp:pr-${{ github.event.number }}-amd64
+        cache-from: type=registry,ref=seppaleinen/worldinmovies_webapp:latest
+    - name: Build tmdb image (PRs only)
+      if: github.event_name == 'pull_request'
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: services/tmdb/Dockerfile
+        platforms: linux/amd64
+        load: true
+        tags: |
+          seppaleinen/worldinmovies_tmdb:pr-${{ github.event.number }}-amd64
+        cache-from: type=registry,ref=seppaleinen/worldinmovies_tmdb:latest
     - name: Start containers and run integration tests
       working-directory: tests/e2e
       env:
-        # On PRs, use PR-specific tags pushed by build jobs; on main, use SHA digest (available before merge jobs create latest)
+        # On PRs: use PR-specific tags (images built locally above); on main: pull SHA tag pushed by build jobs
         TMDB_IMAGE: ${{ github.event_name == 'pull_request' && format('seppaleinen/worldinmovies_tmdb:pr-{0}-amd64', github.event.number) || format('seppaleinen/worldinmovies_tmdb:{0}', github.sha) }}
         WEBAPP_IMAGE: ${{ github.event_name == 'pull_request' && format('seppaleinen/worldinmovies_webapp:pr-{0}-amd64', github.event.number) || format('seppaleinen/worldinmovies_webapp:{0}', github.sha) }}
       run: |
