@@ -272,7 +272,7 @@ jobs:
     - name: Install dependencies
       run: pnpm install --frozen-lockfile --filter @worldinmovies/e2e
     - name: Install Playwright browsers
-      run: pnpm --filter @worldinmovies/e2e exec playwright install chromium
+      run: pnpm --filter @worldinmovies/e2e exec playwright install --with-deps chromium firefox webkit
     # On PRs: build images locally (Docker Hub secrets not available on pull_request events)
     - name: Create .env file for build
       if: github.event_name == 'pull_request'
@@ -323,15 +323,15 @@ jobs:
           docker exec mongo mongoimport --authenticationDatabase admin --authenticationMechanism SCRAM-SHA-256 -u seppa -p password -d tmdb -c movie --mode upsert --jsonArray --type json --file tmdb.flattened_movie.json
           # Trigger Meilisearch indexing so the search E2E tests have data
           curl -X POST -H "X-API-Key: $ADMIN_KEY" http://localhost:8020/index/movies
-          # Poll Meilisearch until at least one result appears (or timeout after 60s)
-          for i in $(seq 1 30); do
+          # Poll Meilisearch until at least one result appears (or timeout after 120s)
+          for i in $(seq 1 60); do
             sleep 2
             RESP=$(curl -s http://localhost:8020/search/movies/ariel)
             if echo "$RESP" | grep -q '"hits":\[{"'; then
               echo "Meilisearch indexed successfully"
               break
             fi
-            if [ "$i" -eq 30 ]; then
+            if [ "$i" -eq 60 ]; then
               echo "WARNING: Meilisearch indexing may not have completed — search E2E tests may fail"
             fi
           done
