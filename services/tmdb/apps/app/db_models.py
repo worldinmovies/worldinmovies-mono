@@ -437,7 +437,7 @@ class Movie(DynamicDocument):
                 if hasattr(x, 'to_mongo'):
                     x = x.to_mongo()
                 data['production_countries'][i] = {
-                    "iso": x.get('iso_3166_1'),
+                    "iso": x.get('iso_3166_1') or x.get('_id'),
                     "name": x.get('english_name') or x.get('name', '')
                 }
         for i, langs in enumerate(data['spoken_languages']):
@@ -448,7 +448,7 @@ class Movie(DynamicDocument):
                 if hasattr(x, 'to_mongo'):
                     x = x.to_mongo()
                 data['spoken_languages'][i] = {
-                    "iso": x.get('iso_639_1'),
+                    "iso": x.get('iso_639_1') or x.get('_id'),
                     "name": x.get('english_name') or x.get('name', '')
                 }
         for a, providers_by_country in enumerate(data['providers']):
