@@ -26,7 +26,7 @@ COPY --from=build /app/apps/webapp/dist /usr/share/nginx/html
 RUN apk add --no-cache gettext openssl libcap && \
     adduser -D -u 1000 appuser && \
     setcap 'cap_net_bind_service=+ep' /usr/sbin/nginx && \
-    sed -i 's/user nginx;/user appuser;/' /etc/nginx/nginx.conf
+    sed -i '/^user /d' /etc/nginx/nginx.conf
 
 ENV TMDB_UPSTREAM=tmdb:8020
 COPY apps/webapp/nginx/sites-enabled/app.conf.template /etc/nginx/conf.d/default.conf.template
