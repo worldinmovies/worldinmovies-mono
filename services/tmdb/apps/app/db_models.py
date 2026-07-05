@@ -429,27 +429,36 @@ class Movie(DynamicDocument):
                 data['genres'][i] = self.genres[i].to_mongo()
             else:
                 data['genres'][i] = self.genres[i]
+        from mongoengine import Document
         for i, country in enumerate(data['production_countries']):
             x = self.production_countries[i]
             if isinstance(x, str):
                 data['production_countries'][i] = x
-            else:
-                if hasattr(x, 'to_mongo'):
-                    x = x.to_mongo()
+            elif isinstance(x, Document):
+                x = x.to_mongo()
                 data['production_countries'][i] = {
-                    "iso": x.get('iso_3166_1') or x.get('_id'),
+                    "iso": x.get('iso_3166_1') or x['_id'],
                     "name": x.get('english_name') or x.get('name', '')
+                }
+            else:
+                data['production_countries'][i] = {
+                    "iso": x['iso_3166_1'],
+                    "name": x['english_name'] if hasattr(x, 'english_name') else x['name']
                 }
         for i, langs in enumerate(data['spoken_languages']):
             x = self.spoken_languages[i]
             if isinstance(x, str):
                 data['spoken_languages'][i] = x
-            else:
-                if hasattr(x, 'to_mongo'):
-                    x = x.to_mongo()
+            elif isinstance(x, Document):
+                x = x.to_mongo()
                 data['spoken_languages'][i] = {
-                    "iso": x.get('iso_639_1') or x.get('_id'),
+                    "iso": x.get('iso_639_1') or x['_id'],
                     "name": x.get('english_name') or x.get('name', '')
+                }
+            else:
+                data['spoken_languages'][i] = {
+                    "iso": x['iso_639_1'],
+                    "name": x['english_name'] if hasattr(x, 'english_name') else x['name']
                 }
         for a, providers_by_country in enumerate(data['providers']):
             for b, provider in enumerate(providers_by_country['providers']):
