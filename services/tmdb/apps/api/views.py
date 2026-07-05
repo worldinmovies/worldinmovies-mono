@@ -251,6 +251,7 @@ def populate_discovery(request):
     return HttpResponse(start_background_process(work, 'discovery_index', 'Indexing Discovery Movie Collection'))
 
 
+@csrf_exempt
 def index_meilisearch(request):
     def work():
         index = client.index("movies")
