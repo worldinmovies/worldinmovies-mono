@@ -425,19 +425,28 @@ class Movie(DynamicDocument):
     def to_json(self):
         data = self.to_mongo()
         for i, genre in enumerate(data['genres']):
-            data['genres'][i] = self.genres[i].to_mongo()
+            if hasattr(self.genres[i], 'to_mongo'):
+                data['genres'][i] = self.genres[i].to_mongo()
+            else:
+                data['genres'][i] = self.genres[i]
         for i, country in enumerate(data['production_countries']):
-            x: dict = self.production_countries[i]
-            data['production_countries'][i] = {
-                "iso": x['iso_3166_1'],
-                "name": x['english_name'] if hasattr(x, 'english_name') else x['name']
-            }
+            x = self.production_countries[i]
+            if isinstance(x, dict):
+                data['production_countries'][i] = {
+                    "iso": x['iso_3166_1'],
+                    "name": x.get('english_name') or x.get('name', '')
+                }
+            else:
+                data['production_countries'][i] = x
         for i, langs in enumerate(data['spoken_languages']):
-            x: dict = self.spoken_languages[i]
-            data['spoken_languages'][i] = {
-                "iso": x['iso_639_1'],
-                "name": x['english_name'] if hasattr(x, 'english_name') else x['name']
-            }
+            x = self.spoken_languages[i]
+            if isinstance(x, dict):
+                data['spoken_languages'][i] = {
+                    "iso": x['iso_639_1'],
+                    "name": x.get('english_name') or x.get('name', '')
+                }
+            else:
+                data['spoken_languages'][i] = x
         for a, providers_by_country in enumerate(data['providers']):
             for b, provider in enumerate(providers_by_country['providers']):
                 try:
