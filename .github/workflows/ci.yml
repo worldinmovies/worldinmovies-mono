@@ -319,8 +319,8 @@ jobs:
           docker cp datasubset/tmdb.movie.json mongo:/
           docker cp datasubset/tmdb.flattened_movie.json mongo:/
           ./wait_until_running.sh
-          docker exec mongo mongoimport --authenticationMechanism SCRAM-SHA-256 -u seppa -p password -d tmdb -c movie --mode upsert --jsonArray --type json --file tmdb.movie.json
-          docker exec mongo mongoimport --authenticationMechanism SCRAM-SHA-256 -u seppa -p password -d tmdb -c movie --mode upsert --jsonArray --type json --file tmdb.flattened_movie.json
+          docker exec mongo mongoimport --authenticationDatabase admin --authenticationMechanism SCRAM-SHA-256 -u seppa -p password -d tmdb -c movie --mode upsert --jsonArray --type json --file tmdb.movie.json
+          docker exec mongo mongoimport --authenticationDatabase admin --authenticationMechanism SCRAM-SHA-256 -u seppa -p password -d tmdb -c movie --mode upsert --jsonArray --type json --file tmdb.flattened_movie.json
           # Trigger Meilisearch indexing so the search E2E tests have data
           curl -X POST -H "X-API-Key: $ADMIN_KEY" http://localhost:8020/index/movies
           # Poll Meilisearch until at least one result appears (or timeout after 60s)
