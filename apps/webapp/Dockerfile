@@ -40,7 +40,10 @@ RUN mkdir -p /opt/webapp/run && chown appuser:appuser /opt/webapp/run && \
     chown appuser:appuser /opt/webapp/run/.htpasswd && \
     echo "Build-time admin password: $P" && \
     ln -sf /opt/webapp/run/default.conf /etc/nginx/conf.d/default.conf && \
-    ln -sf /opt/webapp/run/.htpasswd /etc/nginx/.htpasswd
+    ln -sf /opt/webapp/run/.htpasswd /etc/nginx/.htpasswd && \
+    # Make nginx directories writable by appuser (cache temp, logs, PID)
+    mkdir -p /var/cache/nginx /var/log/nginx && \
+    chown -R appuser:appuser /var/cache/nginx /var/log/nginx /run
 
 USER appuser
 EXPOSE 80
