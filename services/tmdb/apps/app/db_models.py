@@ -431,22 +431,26 @@ class Movie(DynamicDocument):
                 data['genres'][i] = self.genres[i]
         for i, country in enumerate(data['production_countries']):
             x = self.production_countries[i]
-            if isinstance(x, dict):
+            if isinstance(x, str):
+                data['production_countries'][i] = x
+            else:
+                if hasattr(x, 'to_mongo'):
+                    x = x.to_mongo()
                 data['production_countries'][i] = {
-                    "iso": x['iso_3166_1'],
+                    "iso": x.get('iso_3166_1'),
                     "name": x.get('english_name') or x.get('name', '')
                 }
-            else:
-                data['production_countries'][i] = x
         for i, langs in enumerate(data['spoken_languages']):
             x = self.spoken_languages[i]
-            if isinstance(x, dict):
+            if isinstance(x, str):
+                data['spoken_languages'][i] = x
+            else:
+                if hasattr(x, 'to_mongo'):
+                    x = x.to_mongo()
                 data['spoken_languages'][i] = {
-                    "iso": x['iso_639_1'],
+                    "iso": x.get('iso_639_1'),
                     "name": x.get('english_name') or x.get('name', '')
                 }
-            else:
-                data['spoken_languages'][i] = x
         for a, providers_by_country in enumerate(data['providers']):
             for b, provider in enumerate(providers_by_country['providers']):
                 try:
