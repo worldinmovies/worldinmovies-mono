@@ -214,7 +214,7 @@ def fetch_movies_data(request, ids):
         'fetched',
         'fetched_date',
         'data').to_json()
-    return HttpResponse(list(data_list), content_type='application/json')
+    return HttpResponse(data_list, content_type='application/json')
 
 def fetch_movie_data(request, id):
     try:
