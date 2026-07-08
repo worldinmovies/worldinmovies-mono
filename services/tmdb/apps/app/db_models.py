@@ -441,9 +441,17 @@ class Movie(DynamicDocument):
                     "name": x.get('english_name') or x.get('name', '')
                 }
             else:
+                try:
+                    country_iso = x['iso_3166_1']
+                except KeyError:
+                    country_iso = x['iso']
+                try:
+                    country_name = x['english_name']
+                except KeyError:
+                    country_name = x['name']
                 data['production_countries'][i] = {
-                    "iso": x.get('iso_3166_1', x.get('iso')),
-                    "name": x.get('english_name') or x.get('name')
+                    "iso": country_iso,
+                    "name": country_name,
                 }
         for i, langs in enumerate(data['spoken_languages']):
             x = self.spoken_languages[i]
@@ -456,9 +464,17 @@ class Movie(DynamicDocument):
                     "name": x.get('english_name') or x.get('name', '')
                 }
             else:
+                try:
+                    lang_iso = x['iso_639_1']
+                except KeyError:
+                    lang_iso = x['iso']
+                try:
+                    lang_name = x['english_name']
+                except KeyError:
+                    lang_name = x['name']
                 data['spoken_languages'][i] = {
-                    "iso": x.get('iso_639_1', x.get('iso')),
-                    "name": x.get('english_name') or x.get('name')
+                    "iso": lang_iso,
+                    "name": lang_name,
                 }
         for a, providers_by_country in enumerate(data['providers']):
             for b, provider in enumerate(providers_by_country['providers']):
