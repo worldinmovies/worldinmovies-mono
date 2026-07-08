@@ -38,6 +38,7 @@ def before_scenario(context, feature):
 def after_scenario(context, feature):
     if hasattr(context, 'mocker'):
         context.mocker.stop()
+        del context.mocker
     with transaction.atomic():
         Movie.objects.all().delete()
     for i in ['title.akas.tsv.gz', 'title.ratings.tsv.gz']:

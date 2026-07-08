@@ -66,7 +66,7 @@ services:
 
   # Backends
   tmdb:
-    image: seppaleinen/worldinmovies_tmdb:latest
+    image: ${TMDB_IMAGE:-seppaleinen/worldinmovies_tmdb:latest}
     container_name: tmdb
     ports:
       - 8020:8020
@@ -98,7 +98,7 @@ services:
       retries: 3
       start_period: 3s
   tmdb-worker:
-    image: seppaleinen/worldinmovies_tmdb:latest
+    image: ${TMDB_IMAGE:-seppaleinen/worldinmovies_tmdb:latest}
     container_name: tmdb-worker
     environment:
       - TMDB_API=${TMDB_API}
@@ -130,7 +130,7 @@ services:
 
   # Frontend
   webapp:
-    image: seppaleinen/worldinmovies_webapp:latest
+    image: ${WEBAPP_IMAGE:-seppaleinen/worldinmovies_webapp:latest}
     ports:
       - "${VITE_WEBAPP_PORT:?'VITE_WEBAPP_PORT must be set'}:80"
     depends_on:
