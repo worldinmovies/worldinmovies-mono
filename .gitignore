@@ -53,3 +53,4 @@ charts/*/Chart.lock
 # Nginx dev certificates — generate via scripts/generate-dev-certs.sh
 apps/webapp/nginx/certs/*.pem
 apps/webapp/nginx/certs/live/
+test_mongo.py
