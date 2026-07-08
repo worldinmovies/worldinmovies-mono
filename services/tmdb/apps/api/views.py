@@ -214,7 +214,7 @@ def fetch_movies_data(request, ids):
         'fetched',
         'fetched_date',
         'data').to_json()
-    return HttpResponse(list(data_list), content_type='application/json')
+    return HttpResponse(data_list, content_type='application/json')
 
 def fetch_movie_data(request, id):
     try:
@@ -251,6 +251,7 @@ def populate_discovery(request):
     return HttpResponse(start_background_process(work, 'discovery_index', 'Indexing Discovery Movie Collection'))
 
 
+@csrf_exempt
 def index_meilisearch(request):
     def work():
         index = client.index("movies")

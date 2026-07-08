@@ -25,7 +25,8 @@ ENV TZ=Europe/Stockholm
 COPY --from=build /app/apps/webapp/dist /usr/share/nginx/html
 RUN apk add --no-cache gettext openssl libcap && \
     adduser -D -u 1000 appuser && \
-    setcap 'cap_net_bind_service=+ep' /usr/sbin/nginx
+    setcap 'cap_net_bind_service=+ep' /usr/sbin/nginx && \
+    sed -i '/^user /d' /etc/nginx/nginx.conf
 
 ENV TMDB_UPSTREAM=tmdb:8020
 COPY apps/webapp/nginx/sites-enabled/app.conf.template /etc/nginx/conf.d/default.conf.template
@@ -33,11 +34,16 @@ COPY apps/webapp/nginx/sites-enabled/app.conf.template /etc/nginx/conf.d/default
 # Create writable runtime directory for config generated at startup
 RUN mkdir -p /opt/webapp/run && chown appuser:appuser /opt/webapp/run && \
     envsubst '$TMDB_UPSTREAM' < /etc/nginx/conf.d/default.conf.template > /opt/webapp/run/default.conf && \
+    chown appuser:appuser /opt/webapp/run/default.conf && \
     P=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 16) && \
     printf 'admin:%s\n' "$(openssl passwd -apr1 "$P")" > /opt/webapp/run/.htpasswd && \
+    chown appuser:appuser /opt/webapp/run/.htpasswd && \
     echo "Build-time admin password: $P" && \
     ln -sf /opt/webapp/run/default.conf /etc/nginx/conf.d/default.conf && \
-    ln -sf /opt/webapp/run/.htpasswd /etc/nginx/.htpasswd
+    ln -sf /opt/webapp/run/.htpasswd /etc/nginx/.htpasswd && \
+    # Make nginx directories writable by appuser (cache temp, logs, PID)
+    mkdir -p /var/cache/nginx /var/log/nginx && \
+    chown -R appuser:appuser /var/cache/nginx /var/log/nginx /run
 
 USER appuser
 EXPOSE 80

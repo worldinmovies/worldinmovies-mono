@@ -1,10 +1,11 @@
+---
 config:
-  target: "https://webapp.localhost"
+  target: ${TARGET_URL:-http://localhost}
   plugins:
     expect:
       reportFailuresAsErrors: true
       outputFormat: prettyError
-      expectDefault200: true
+    expectDefault200: true
   tls:
     rejectUnauthorized: false
   # Enable the Playwright engine:
@@ -15,7 +16,7 @@ config:
         - duration: 1200
           arrivalRate: 10
     local:
-      target: "https://webapp.localhost"
+      target: "http://localhost"
       phases:
         - duration: 60
           arrivalRate: 20
@@ -26,14 +27,10 @@ config:
   engines:
     playwright:
       aggregateByName: true
-      launchOptions:
-        headless: true
-      contextOptions:
-        ignoreHTTPSErrors: true
-  processor: "./playwright-flows.spec.ts"
-scenarios:
-  - name: Web Scenario
-    engine: playwright
-    flowFunction: "scenario"
-    flow:
-      - log: "Current environment is {{ $environment }}"
+    processor: "./playwright-flows.spec.ts"
+  scenarios:
+    - name: Web Scenario
+      engine: playwright
+      flowFunction: "scenario"
+      flow:
+        - log: "Current environment is {{ $environment }}"

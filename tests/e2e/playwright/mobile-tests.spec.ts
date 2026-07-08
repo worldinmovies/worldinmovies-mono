@@ -7,7 +7,7 @@ test.describe('Mobile viewport (iPhone 14 Pro 390×844)', () => {
     await page.goto('/');
 
     // Search input should be visible at mobile width
-    const searchInput = page.getByPlaceholder('Search movies...');
+    const searchInput = page.getByPlaceholder('Search by title, director, or country...');
     await expect(searchInput).toBeVisible({ timeout: 5000 });
 
     // Main navigation links exist (responsive)
@@ -48,7 +48,7 @@ test.describe('Mobile viewport (iPhone 14 Pro 390×844)', () => {
     await page.goto('/');
     await page.waitForTimeout(500);
 
-    const searchInput = page.getByPlaceholder('Search movies...');
+    const searchInput = page.getByPlaceholder('Search by title, director, or country...');
     await searchInput.fill('Ariel');
     await expect(page.getByText('Ariel')).toBeVisible({ timeout: 3000 });
     await expect(page.getByText('1988')).toBeVisible();

@@ -25,7 +25,8 @@ test.describe('RabbitMQ smoke test', () => {
 
 test.describe('TMDB service endpoints', () => {
   test('Get movie details endpoint', async ({ request }) => {
-    const resp = await request.get(`${tmdbUrl}/movie/2,5`);
+    // Use the multi-ID endpoint (plural /movies/) to fetch multiple movies by ID
+    const resp = await request.get(`${tmdbUrl}/movies/2,5`);
     expect(resp.status()).toBe(200);
     const body = await resp.json();
     expect(Array.isArray(body)).toBe(true);

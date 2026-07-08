@@ -7,7 +7,7 @@ function log_and_exit() {
 }
 
 ##### MongoDB  #####
-if curl --connect-timeout 10 --retry 10 --retry-max-time 60 --silent --show-error localhost:27017 | grep 'It looks like you are trying to access MongoDB over HTTP on the native driver port'; then echo "Mongo up and running"; else log_and_exit "MongoDB"; fi
+if docker exec mongo mongosh --quiet --eval 'db.adminCommand("ping").ok' 2>/dev/null | grep -q 1; then echo "Mongo up and running"; else log_and_exit "MongoDB"; fi
 
 ##### RabbitMQ #####
 if curl --connect-timeout 10 --retry 10 --retry-max-time 60 --silent --show-error -kL http://localhost/15672; then echo "RabbitMQ up and running"; else log_and_exit "RabbitMQ"; fi
