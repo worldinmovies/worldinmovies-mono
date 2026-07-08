@@ -31,7 +31,8 @@ COPY services/tmdb/ /app/services/tmdb/
 WORKDIR /app/services/tmdb
 
 # Create SQLite database file with proper permissions
-RUN touch db.sqlite3 && chown appuser:appuser db.sqlite3
+# Also make the parent dir writable by appuser so SQLite can create journal/WAL files
+RUN touch db.sqlite3 && chown appuser:appuser db.sqlite3 && chown appuser:appuser /app/services/tmdb/
 
 USER appuser
 

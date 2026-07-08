@@ -133,13 +133,18 @@ else:
 
 # ---------------- MONGO -----------------
 if environment == 'docker' or environment == 'localhost':
-    mongo_url = os.environ.get('MONGO_URL', 'mongo')
-    mongo_user = os.environ.get('MONGO_USER', 'seppa')
-    mongo_pass = os.environ['MONGO_PASSWORD']
-    super_url = "mongodb://%s:%s@%s:27017/tmdb?authSource=tmdb" % (mongo_user, mongo_pass, mongo_url)
-    mongoengine.connect(db='tmdb',
-                        host=super_url,
-                        serverSelectionTimeoutMS=3000)
+        mongo_url = os.environ.get('MONGO_URL', 'mongo')
+        mongo_user = os.environ.get('MONGO_USER', 'seppa')
+        mongo_pass = os.environ['MONGO_PASSWORD']
+        mongoengine.connect(
+            host=mongo_url,
+            port=27017,
+            username=mongo_user,
+            password=mongo_pass,
+            db='tmdb',
+            authSource='admin',
+            serverSelectionTimeoutMS=3000
+        )
 else:
     mongo_url = os.environ.get('MONGO_URL')
     mongoengine.connect('test', host=f"{mongo_url}")

@@ -425,19 +425,57 @@ class Movie(DynamicDocument):
     def to_json(self):
         data = self.to_mongo()
         for i, genre in enumerate(data['genres']):
-            data['genres'][i] = self.genres[i].to_mongo()
+            if hasattr(self.genres[i], 'to_mongo'):
+                data['genres'][i] = self.genres[i].to_mongo()
+            else:
+                data['genres'][i] = self.genres[i]
+        from mongoengine import Document
         for i, country in enumerate(data['production_countries']):
-            x: dict = self.production_countries[i]
-            data['production_countries'][i] = {
-                "iso": x['iso_3166_1'],
-                "name": x['english_name'] if hasattr(x, 'english_name') else x['name']
-            }
+            x = self.production_countries[i]
+            if isinstance(x, str):
+                data['production_countries'][i] = x
+            elif isinstance(x, Document):
+                x = x.to_mongo()
+                data['production_countries'][i] = {
+                    "iso": x.get('iso_3166_1') or x['_id'],
+                    "name": x.get('english_name') or x.get('name', '')
+                }
+            else:
+                try:
+                    country_iso = x['iso_3166_1']
+                except KeyError:
+                    country_iso = x['iso']
+                try:
+                    country_name = x['english_name']
+                except KeyError:
+                    country_name = x['name']
+                data['production_countries'][i] = {
+                    "iso": country_iso,
+                    "name": country_name,
+                }
         for i, langs in enumerate(data['spoken_languages']):
-            x: dict = self.spoken_languages[i]
-            data['spoken_languages'][i] = {
-                "iso": x['iso_639_1'],
-                "name": x['english_name'] if hasattr(x, 'english_name') else x['name']
-            }
+            x = self.spoken_languages[i]
+            if isinstance(x, str):
+                data['spoken_languages'][i] = x
+            elif isinstance(x, Document):
+                x = x.to_mongo()
+                data['spoken_languages'][i] = {
+                    "iso": x.get('iso_639_1') or x['_id'],
+                    "name": x.get('english_name') or x.get('name', '')
+                }
+            else:
+                try:
+                    lang_iso = x['iso_639_1']
+                except KeyError:
+                    lang_iso = x['iso']
+                try:
+                    lang_name = x['english_name']
+                except KeyError:
+                    lang_name = x['name']
+                data['spoken_languages'][i] = {
+                    "iso": lang_iso,
+                    "name": lang_name,
+                }
         for a, providers_by_country in enumerate(data['providers']):
             for b, provider in enumerate(providers_by_country['providers']):
                 try:
@@ -447,6 +485,9 @@ class Movie(DynamicDocument):
                                                                 logo_path=x['logo_path'])
                 except mongoengine.errors.DoesNotExist:
                     pass
+
+        if '_id' in data and 'id' not in data:
+            data['id'] = data['_id']
 
         return json_util.dumps(data)
 
