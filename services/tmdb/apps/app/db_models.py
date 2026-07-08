@@ -486,8 +486,8 @@ class Movie(DynamicDocument):
                 except mongoengine.errors.DoesNotExist:
                     pass
 
-        if '_id' in data:
-            data['id'] = data.pop('_id')
+        if '_id' in data and 'id' not in data:
+            data['id'] = data['_id']
 
         return json_util.dumps(data)
 
