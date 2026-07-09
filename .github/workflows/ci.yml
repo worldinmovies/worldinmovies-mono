@@ -335,6 +335,21 @@ jobs:
               echo "WARNING: Meilisearch indexing may not have completed — search E2E tests may fail"
             fi
           done
+          # Seed DiscoveryMovie data into MongoDB for grid/country/genre tests
+          docker cp seed/seed-data.json mongo:/
+          docker exec mongo mongoimport \
+            --authenticationDatabase admin \
+            --authenticationMechanism SCRAM-SHA-256 \
+            -u seppa -p password \
+            -d tmdb -c discoverymovie \
+            --mode upsert --jsonArray --type json \
+            --file seed-data.json
+          # Push DiscoveryMovie documents to Meilisearch for search tests
+          jq -c '.[] | {id: ._id, title: .english_title, original_title: .original_title, alternative_titles: [], overview: .overview, directors: [.director], weighted_rating: .weighted_rating, vote_average: .vote_average, vote_count: .vote_count, guessed_country: .estimated_country, original_language: (if .estimated_country == "JP" then "ja" elif .estimated_country == "KR" then "ko" elif .estimated_country == "FR" then "fr" elif .estimated_country == "IT" then "it" elif .estimated_country == "FI" then "fi" elif .estimated_country == "SE" then "sv" elif .estimated_country == "HK" then "zh" else "en" end), poster: .poster_path, year: .year}' seed/seed-data.json | jq -s '.' | \
+            curl -sf -X POST "http://localhost:7700/indexes/movies/documents" \
+              -H "Authorization: Bearer ***REMOVED***" \
+              -H "Content-Type: application/json" \
+              -d @- > /dev/null && echo "DiscoveryMovie seed indexed in Meilisearch"
           pnpm e2e:test
           # K6 smoke load test after E2E tests pass
           docker run --rm --network host \

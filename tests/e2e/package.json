@@ -7,6 +7,7 @@
     "e2e:test": "playwright test",
     "e2e:up": "docker compose -f docker-compose.yml up -d",
     "e2e:down": "docker compose -f docker-compose.yml down",
+    "e2e:seed": "cd seed && ./seed.sh",
     "e2e:ui": "playwright test --ui",
     "postinstall": "playwright install chromium",
     "artillery:run": "artillery run --output test-results/artillery-report.json artillery/tmdb-scenarios.yml && artillery report test-results/artillery-report.json"
