@@ -129,6 +129,7 @@ def get_best_randoms(request, movies=0):
         {"$sort": {"_id": 1}},
         {"$limit": limit},
         {"$project": {"movie": {"$arrayElemAt": ["$topMovies", movie_skip]}}},
+        {"$match": {"movie": {"$type": "object"}}},
         {"$replaceRoot": {"newRoot": "$movie"}}
     ]
     
