@@ -56,5 +56,3 @@ export const transferBackendMovie = (m: import("@/lib/models").BackendMovie): Mo
     production_companies: m.production_companies?.map((pc) => pc.name) || []
   };
 };
-};
-};

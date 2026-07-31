@@ -28,7 +28,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Flag } from "./Flag";
+import { Flag } from "@/components/Flag";
 
 interface MovieDetailProps {
   onClose?: () => void;
@@ -49,14 +49,13 @@ export const MovieDetail = ({ onClose }: MovieDetailProps) => {
     }
   }, [id, fetchMovieDetails]);
 
-  useEffect(() => {
-    if (movie) {
-      useSEO({
-        title: movie.title,
-        description: movie.description,
-        ogType: 'video',
-        ogImage: movie.poster,
-        structuredData: {
+  useSEO({
+    title: movie?.title ?? '',
+    description: movie?.description ?? '',
+    ogType: 'video',
+    ogImage: movie?.poster,
+    structuredData: movie
+      ? {
           "@context": "https://schema.org",
           "@type": "Movie",
           "name": movie.title,
@@ -83,9 +82,8 @@ export const MovieDetail = ({ onClose }: MovieDetailProps) => {
           })),
           "mainEntityOfPage": window.location.href
         }
-      });
-    }
-  }, [movie]);
+      : undefined,
+  });
 
   if (isLoading || !movie) {
     return (
@@ -209,3 +207,5 @@ export const MovieDetail = ({ onClose }: MovieDetailProps) => {
     </div>
   );
 };
+
+export default MovieDetail;
