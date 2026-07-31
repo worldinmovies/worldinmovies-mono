@@ -47,7 +47,7 @@ export const transferBackendMovie = (m: import("@/lib/models").BackendMovie): Mo
       : "",
     director: m.director,
     rating: m.imdb_vote_average > 0 ? m.imdb_vote_average : m.vote_average,
-    genres: m.genres?.map((genre) => genre.name),
+    genres: m.genres?.map((genre) => genre.name) || [],
     poster: m.poster_path
       ? `https://image.tmdb.org/t/p/w300${m.poster_path}`
       : "",
@@ -55,5 +55,6 @@ export const transferBackendMovie = (m: import("@/lib/models").BackendMovie): Mo
     cast: m.credits?.cast?.map((c) => c.name) || [],
     production_companies: m.production_companies?.map((pc) => pc.name) || []
   };
+};
 };
 };
