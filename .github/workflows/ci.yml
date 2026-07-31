@@ -120,7 +120,7 @@ jobs:
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
           tags: |
-            seppaleinen/worldinmovies_webapp:${{ github.sha }}
+            seppaleinen/worldinmovies_webapp:${{ github.sha }}-${{ env.PLATFORM_PAIR }}
           push: true
           cache-from: type=registry,ref=seppaleinen/worldinmovies_webapp:latest
           cache-to: type=inline
@@ -175,7 +175,7 @@ jobs:
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
           tags: |
-            seppaleinen/worldinmovies_tmdb:${{ github.sha }}
+            seppaleinen/worldinmovies_tmdb:${{ github.sha }}-${{ env.PLATFORM_PAIR }}
           push: true
           cache-from: type=registry,ref=seppaleinen/worldinmovies_tmdb:latest
           cache-to: type=inline
@@ -217,6 +217,7 @@ jobs:
           images: seppaleinen/worldinmovies_tmdb
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ github.sha }}
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -252,6 +253,7 @@ jobs:
           images: seppaleinen/worldinmovies_webapp
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ github.sha }}
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
