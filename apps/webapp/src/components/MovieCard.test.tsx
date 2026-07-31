@@ -77,7 +77,7 @@ describe('MovieCard component', () => {
   it('should inject structured data script', () => {
     render(<MovieCard movie={mockMovie} />);
 
-    const script = document.getElementById('movie-schema-1');
+    const script = document.getElementById('structured-data');
     expect(script).not.toBeNull();
     const data = JSON.parse(script?.textContent || '{}');
     expect(data['@type']).toBe('Movie');
@@ -92,11 +92,11 @@ describe('MovieCard component', () => {
   it('should remove schema on unmount', () => {
     const { unmount } = render(<MovieCard movie={mockMovie} />);
 
-    expect(document.getElementById('movie-schema-1')).not.toBeNull();
+    expect(document.getElementById('structured-data')).not.toBeNull();
 
     unmount();
 
-    expect(document.getElementById('movie-schema-1')).toBeNull();
+    expect(document.getElementById('structured-data')).toBeNull();
   });
 
   it('should show fallback when image fails to load', () => {

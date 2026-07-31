@@ -20,6 +20,11 @@ export const useSEO = ({
   structuredData,
 }: SEOConfig) => {
   useEffect(() => {
+    // No-op when there is nothing to set yet (e.g. data still loading).
+    if (!title) {
+      return;
+    }
+
     // Update title
     document.title = `${title} | World in Movies`;
 
@@ -110,6 +115,11 @@ export const useSEO = ({
       const defaultMetaDesc = document.querySelector('meta[name="description"]');
       if (defaultMetaDesc) {
         defaultMetaDesc.setAttribute('content', 'Explore and track the finest international films from around the globe.');
+      }
+      // Remove injected JSON-LD script so stale structured data doesn't persist
+      const scriptTag = document.getElementById('structured-data');
+      if (scriptTag) {
+        scriptTag.remove();
       }
     };
   }, [title, description, keywords, ogType, ogImage, canonicalUrl, structuredData]);
