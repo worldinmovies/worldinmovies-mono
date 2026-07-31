@@ -11,6 +11,8 @@ export interface Movie {
   genres: string[];
   poster: string;
   description: string;
+  cast?: string[];
+  production_companies?: string[];
 }
 
 export interface ImportedMovie {
@@ -53,4 +55,8 @@ export interface BackendMovie {
   genres: Genre[];
   poster_path: string;
   overview: string;
+  credits?: {
+    cast?: { name: string }[];
+  };
+  production_companies?: { name: string }[];
 }

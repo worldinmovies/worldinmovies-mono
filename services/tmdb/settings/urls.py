@@ -15,6 +15,7 @@ urlpatterns = [
     path('imdb/ratings',                    views.parse_user_imdb_ratings),     # user CSV upload
     path('letterboxd/ratings',              views.parse_user_letterboxd_ratings), # user CSV upload
     re_path(r'^status$',                    views.import_status),
+    path('sitemap.xml',                       views.sitemap),
     re_path(r'^health/',                    include('health_check.urls')),  # k8s probes
 
     # ── Trakt OAuth proxy (httpOnly cookie via backend) ────────────
