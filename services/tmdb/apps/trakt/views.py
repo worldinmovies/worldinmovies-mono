@@ -134,7 +134,7 @@ def trakt_import(request):
         )
         rated_resp.raise_for_status()
         results['rated'] = rated_resp.json()
-    except requests.RequestException as e:
+    except requests.RequestException:
         # Non-fatal: rated movies are optional
         results['rated'] = []
 

@@ -1,7 +1,9 @@
 import csv
+
 from apps.app.helper import sanitize_csv_cell
 from apps.app.meilisearch_client import client
 from apps.app.models import Movie
+
 
 def parse_user_watched(file):
     index = client.index("movies")

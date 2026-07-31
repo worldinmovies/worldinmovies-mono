@@ -2,20 +2,32 @@ import concurrent.futures
 import datetime
 import json
 import os
-import requests
 import time
+from itertools import chain, islice
+
+import requests
 from channels.layers import get_channel_layer
 from django.db import transaction
-from itertools import chain, islice
 from mongoengine import DoesNotExist
 from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
 from sentry_sdk.crons import monitor
+from urllib3.util.retry import Retry
 
+from apps.app.db_models import (
+    Genre,
+    Movie,
+    ProductionCountries,
+    SpokenLanguage,
+    WatchProvider,
+)
+from apps.app.helper import (
+    __log_progress,
+    __send_data_to_channel,
+    __unzip_file,
+    get_statics,
+    log,
+)
 from apps.worker.celery_tasks import populate_discovery_movie_task
-
-from apps.app.helper import __send_data_to_channel, __log_progress, __unzip_file, log, get_statics
-from apps.app.db_models import Movie, SpokenLanguage, Genre, ProductionCountries, WatchProvider
 
 
 @monitor(monitor_slug='base_import')

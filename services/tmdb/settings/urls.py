@@ -1,7 +1,8 @@
+from django.urls import include, path, re_path
+
 from apps.api import views
 from apps.api.auth import require_admin_token
 from apps.trakt import views as trakt_views
-from django.urls import path, re_path, include
 
 urlpatterns = [
     # ── Public read-only endpoints (no auth required) ──────────────

@@ -1,6 +1,6 @@
 import datetime
-import pytz
 
+import pytz
 from channels.generic.websocket import AsyncWebsocketConsumer
 from websockets.exceptions import ConnectionClosedOK
 

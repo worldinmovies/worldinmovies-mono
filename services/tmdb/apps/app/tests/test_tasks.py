@@ -1,13 +1,13 @@
-from unittest import mock, TestCase
+from unittest import TestCase, mock
 
 from apps.worker.celery_tasks import (
-    redo_countries,
+    extract_alternative_titles,
+    extract_directors,
     import_imdb_ratings_task,
     import_imdb_titles_task,
-    populate_discovery_movie_task,
     index_movies,
-    extract_directors,
-    extract_alternative_titles,
+    populate_discovery_movie_task,
+    redo_countries,
 )
 
 

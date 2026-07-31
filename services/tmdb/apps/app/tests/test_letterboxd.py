@@ -9,10 +9,9 @@ All I/O is mocked — no real Meilisearch or MongoDB involved.
 """
 
 from io import StringIO
-from unittest import mock, TestCase
+from unittest import TestCase, mock
 
 from apps.letterboxd.letterboxd import parse_user_watched
-
 
 SAMPLE_CSV = """Date,Name,Year,Letterboxd URI
 2020-02-14,Parasite,2019,https://boxd.it/hTha

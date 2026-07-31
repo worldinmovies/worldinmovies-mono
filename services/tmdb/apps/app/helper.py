@@ -1,14 +1,14 @@
-import gzip
-import traceback
 import datetime
+import gzip
 import json
 import threading
-
+import traceback
 from itertools import chain, islice
+
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 
-from apps.app.db_models import Genre, SpokenLanguage, ProductionCountries
+from apps.app.db_models import Genre, ProductionCountries, SpokenLanguage
 
 
 def sanitize_csv_cell(value: str) -> str:

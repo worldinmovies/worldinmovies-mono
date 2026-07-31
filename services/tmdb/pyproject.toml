@@ -7,10 +7,11 @@ requires-python = ">=3.12"
 # Target Python version
 target-version = "py312"
 
-# Files to lint
-include = ["apps/", "settings/", "manage.py"]
+# Files to lint (per-command option, stays at top level)
+include = ["apps/**/*.py", "settings/**/*.py", "manage.py"]
 
-# Enable rules: pycodestyle (E), pyflakes (F), isort (I), pydocstyle (D - conventions only)
+[tool.ruff.lint]
+# Enable rules: pycodestyle (E), pyflakes (F), isort (I)
 select = ["E", "F", "I"]
 ignore = [
     "E501",  # line too long — Django models have long field defs

@@ -1,4 +1,4 @@
-from apps.app.db_models import Movie
+from apps.app.db_models import Movie  # noqa: F401  (re-exported for legacy consumers)
 
 
 class BelongsToCollection:
