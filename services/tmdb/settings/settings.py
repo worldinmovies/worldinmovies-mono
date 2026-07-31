@@ -1,7 +1,8 @@
-import sys
-import sentry_sdk
-import mongoengine
 import os
+import sys
+
+import mongoengine
+import sentry_sdk
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PROJECT_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -76,6 +77,7 @@ CRONJOBS = [
 STATIC_URL = '/static/'
 
 MIDDLEWARE = [
+    'apps.api.middleware.HealthCheckHostBypassMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
