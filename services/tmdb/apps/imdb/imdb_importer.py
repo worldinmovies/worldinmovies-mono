@@ -1,14 +1,14 @@
 import csv
 import json
-import requests
 import sys
 
-from sentry_sdk.crons import monitor
+import requests
 from channels.layers import get_channel_layer
+from sentry_sdk.crons import monitor
 
-from apps.worker.celery_tasks import import_imdb_ratings_task, import_imdb_titles_task
-from apps.app.helper import chunks, sanitize_csv_cell, __unzip_file, log
 from apps.app.db_models import Log, Movie
+from apps.app.helper import __unzip_file, chunks, log, sanitize_csv_cell
+from apps.worker.celery_tasks import import_imdb_ratings_task, import_imdb_titles_task
 
 
 def parse_user_watched(file):

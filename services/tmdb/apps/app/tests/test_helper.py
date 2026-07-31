@@ -1,8 +1,12 @@
 import json
-import threading
-from unittest import mock, TestCase
+from unittest import TestCase, mock
 
-from apps.app.helper import convert_country_code, chunks, buffer, start_background_process
+from apps.app.helper import (
+    buffer,
+    chunks,
+    convert_country_code,
+    start_background_process,
+)
 
 
 class ConvertCountryCodeTest(TestCase):
@@ -55,7 +59,6 @@ class ConvertCountryCodeTest(TestCase):
     # SU expands to 14 countries
     def test_su_to_14_republics(self):
         """USSR code maps to all 14 independent republics."""
-        expected_codes = ['AM', 'AZ', 'EE', 'GE', 'KZ', 'KG', 'LV', 'LT', 'MD', 'RU', 'TJ', 'TM', 'UZ']
         # SU maps to all but 'CS' (now two entries for CS: Czechoslovakia and Serbia & Montenegro)
         # Actually checking each in the list
         su_republics = ['AM', 'AZ', 'EE', 'GE', 'KZ', 'KG', 'LV', 'LT', 'MD', 'RU', 'TJ', 'TM', 'UZ']

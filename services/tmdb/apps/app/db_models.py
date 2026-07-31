@@ -1,26 +1,30 @@
 import decimal
 from collections import Counter
-from typing import override
-from bson import json_util
-import pycountry
-import pytz
-import mongoengine
+
 # import line_profiler
 # import atexit
 from datetime import datetime, timedelta
 from functools import lru_cache
+from typing import override
 
-from mongoengine import DynamicDocument, QuerySet
-from mongoengine.fields import (ListField,
-                                EmbeddedDocumentField,
-                                EmbeddedDocument,
-                                ReferenceField,
-                                StringField,
-                                IntField,
-                                BooleanField,
-                                FloatField,
-                                DateTimeField, EmbeddedDocumentListField)
+import mongoengine
+import pycountry
+import pytz
 from babel.languages import get_official_languages, get_territory_language_info
+from bson import json_util
+from mongoengine import DynamicDocument, QuerySet
+from mongoengine.fields import (
+    BooleanField,
+    DateTimeField,
+    EmbeddedDocument,
+    EmbeddedDocumentField,
+    EmbeddedDocumentListField,
+    FloatField,
+    IntField,
+    ListField,
+    ReferenceField,
+    StringField,
+)
 
 tz = pytz.timezone('Europe/Stockholm')
 

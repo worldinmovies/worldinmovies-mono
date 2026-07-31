@@ -13,10 +13,12 @@ Read-only public endpoints (genres, search, movie detail, status, health)
 do NOT need this decorator.
 """
 
-import os
 import json
+import os
 from functools import wraps
+
 from django.http import HttpResponse
+
 
 def require_admin_token(view_func):
     """Decorator that requires a valid X-API-Key header.
