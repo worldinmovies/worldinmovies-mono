@@ -1,19 +1,20 @@
-import csv
 import datetime
 import json
-import threading
 import random
+import threading
 import time
 
-from apps.letterboxd import letterboxd
-from apps.worker.celery_tasks import redo_countries, index_movies
-from apps.app.helper import chunks, convert_country_code, start_background_process
+from apps.api import views
+from apps.api.auth import require_admin_token
+from apps.imdb import imdb_importer
 from apps.imdb.imdb_importer import import_imdb_ratings, import_imdb_alt_titles
+from apps.trakt import views as trakt_views
+from apps.app.helper import chunks, convert_country_code, start_background_process
+from apps.app.db_models import Movie, Genre, SpokenLanguage, ProductionCountries, DiscoveryMovie
+from apps.app.meilisearch_client import client
 from apps.tmdb.tmdb_importer import download_files, fetch_tmdb_data_concurrently, import_genres, import_countries, \
     import_languages, \
     base_import, check_which_movies_needs_update, import_providers, populate_discovery_movies
-from apps.app.db_models import Movie, Genre, SpokenLanguage, ProductionCountries, DiscoveryMovie
-from apps.imdb import imdb_importer
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from apps.app.meilisearch_client import client
@@ -353,3 +354,14 @@ def parse_user_letterboxd_ratings(request):
             return HttpResponse(json.dumps(result), content_type='application/json')
 
     return HttpResponse("Method: %s, not allowed" % request.method, status=400)
+
+def sitemap(request):
+    import xml.etree.ElementTree as ET
+    from django.http import HttpResponse
+    urlset = ET.Element("urlset", xmlns="http://www.sitemaps.org/schemas/sitemap/0.9")
+    for movie in Movie.objects.all():
+        url_element = ET.SubElement(urlset, "url")
+        loc_element = ET.SubElement(url_element, "loc")
+        loc_element.text = f"https://worldinmovies.com/movie/{movie.id}"
+    response = HttpResponse(ET.tostring(urlset, encoding="unicode"), content_type="application/xml")
+    return response

@@ -52,5 +52,8 @@ export const transferBackendMovie = (m: import("@/lib/models").BackendMovie): Mo
       ? `https://image.tmdb.org/t/p/w300${m.poster_path}`
       : "",
     description: m.overview,
+    cast: m.credits?.cast?.map((c) => c.name) || [],
+    production_companies: m.production_companies?.map((pc) => pc.name) || []
   };
+};
 };
