@@ -30,7 +30,8 @@ export const MovieGrid = () => {
   const [seenMovies, setSeenMovies] = useState<Movie[]>([]);
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
   const [loadingMovieDetails, setLoadingMovieDetails] = useState(false);
-  const [seed] = useState<number>(Date.now());
+  // Lazy initializer — Date.now() must not be called during render.
+  const [seed] = useState<number>(() => Date.now());
   
   // Use refs to store current values for intersection observer
   const selectedCountryRef = useRef<string | null>(null);
@@ -77,9 +78,12 @@ export const MovieGrid = () => {
     
     window.addEventListener('seenMoviesChanged', handleSeenChanged as EventListener);
     window.addEventListener('watchlistChanged', handleWatchlistChanged as EventListener);
-    
-    // Initial load
-    loadMoreMovies(seed, undefined, 0, genreFilter, true);
+
+    // NOTE: the initial movie load intentionally lives in the
+    // [genreFilter, selectedCountry] effect below — it fires on mount with
+    // the same args (seed, null, 0, 'all', true). Calling loadMoreMovies here
+    // as well fires a second, identical /view/random/best/0 fetch on first
+    // render, doubling API work and JSON parsing before the grid can paint.
 
     return () => {
       window.removeEventListener('seenMoviesChanged', handleSeenChanged as EventListener);
@@ -208,7 +212,10 @@ export const MovieGrid = () => {
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
           {filteredMovies.map((movie) => (
             <MovieCard 
-              key={`${movie.id}-${Math.random()}`} 
+              // Stable key — a random key remounts every card whenever the
+              // list identity changes (fetch, filter, load-more), which is
+              // wasted work on the first-render path.
+              key={movie.id} 
               movie={movie} 
               onClick={() => handleMovieSelect(movie.id)}
             />

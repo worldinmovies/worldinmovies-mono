@@ -118,18 +118,16 @@ describe('MovieGrid', () => {
   it('calls loadMoreMovies on mount', () => {
     render(<MovieGrid />);
 
-    // The mount effect (useEffect with []) fires:
-    //   loadMoreMovies(seed, undefined, 0, genreFilter, true)
-    // The follow-up effect [genreFilter, selectedCountry] also fires on mount:
-    //   loadMoreMovies(seed, null, 0, genreFilter, true)
+    // The initial load happens in the [genreFilter, selectedCountry] effect,
+    // which fires on mount with the default values:
+    //   loadMoreMovies(seed, null, 0, 'all', true)
     expect(mockLoadMoreMovies).toHaveBeenCalled();
-    expect(mockLoadMoreMovies.mock.calls.length).toBeGreaterThanOrEqual(1);
 
-    // Verify at least one call matches the mount-effect signature.
+    // Verify at least one call matches the mount signature.
     const hasMountCall = mockLoadMoreMovies.mock.calls.some(
       ([seed, countryCode, skip, genres, reset]) =>
         typeof seed === 'number' &&
-        countryCode === undefined &&
+        countryCode === null &&
         skip === 0 &&
         genres === 'all' &&
         reset === true,
