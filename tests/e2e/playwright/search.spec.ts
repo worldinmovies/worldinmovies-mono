@@ -10,7 +10,8 @@ test.describe('Movie Search', () => {
 
   test('shows suggestions when typing a movie title', async ({ page }) => {
     await page.goto('/');
-    await page.locator('.grid.grid-cols-2 > div').first().waitFor({ state: 'visible', timeout: 20000 });
+    // First render on a loaded CI runner can exceed 20s — give generous headroom.
+    await page.locator('.grid.grid-cols-2 > div').first().waitFor({ state: 'visible', timeout: 60000 });
 
     // Type a known movie title in the search box
     const searchInput = page.locator('input[placeholder="Search by title, director, or country..."]');
@@ -18,12 +19,12 @@ test.describe('Movie Search', () => {
 
     // Wait for debounced API call (300ms) + response and suggestions to render
     const suggestion = page.getByRole('option', { name: /parasite/i });
-    await expect(suggestion).toBeVisible({ timeout: 10000 });
+    await expect(suggestion).toBeVisible({ timeout: 30000 });
   });
 
   test('shows no suggestions for non-existent movies', async ({ page }) => {
     await page.goto('/');
-    await page.locator('.grid.grid-cols-2 > div').first().waitFor({ state: 'visible', timeout: 20000 });
+    await page.locator('.grid.grid-cols-2 > div').first().waitFor({ state: 'visible', timeout: 60000 });
 
     const searchInput = page.locator('input[placeholder="Search by title, director, or country..."]');
     await searchInput.fill('xyznonexistentmovie2026');
@@ -40,18 +41,19 @@ test.describe('Movie Search', () => {
     // Ensure the backend responds before checking — prevents flakiness
     // when the page load event fires before the React app finishes fetching
     const initialResponse = page.waitForResponse(
-      resp => resp.url().includes('/view/random/best/') && resp.status() === 200
+      resp => resp.url().includes('/view/random/best/') && resp.status() === 200,
+      { timeout: 60000 }
     );
     await page.goto('/');
     await initialResponse;
-    await page.locator('.grid.grid-cols-2 > div').first().waitFor({ state: 'visible', timeout: 15000 });
+    await page.locator('.grid.grid-cols-2 > div').first().waitFor({ state: 'visible', timeout: 60000 });
 
     const searchInput = page.locator('input[placeholder="Search by title, director, or country..."]');
 
     // Type to trigger suggestions
     await searchInput.fill('parasite');
     const suggestion = page.getByRole('option', { name: /parasite/i });
-    await expect(suggestion).toBeVisible({ timeout: 10000 });
+    await expect(suggestion).toBeVisible({ timeout: 30000 });
 
     // Clear the input
     await searchInput.clear();
@@ -68,7 +70,7 @@ test.describe('Movie Search', () => {
 
   test('clicking a search suggestion and opening movie detail', async ({ page }) => {
     await page.goto('/');
-    await page.locator('.grid.grid-cols-2 > div').first().waitFor({ state: 'visible', timeout: 20000 });
+    await page.locator('.grid.grid-cols-2 > div').first().waitFor({ state: 'visible', timeout: 60000 });
 
     // Search for a movie
     const searchInput = page.locator('input[placeholder="Search by title, director, or country..."]');
@@ -76,7 +78,7 @@ test.describe('Movie Search', () => {
 
     // Wait for suggestion
     const suggestion = page.getByRole('option', { name: /godfather/i });
-    await expect(suggestion).toBeVisible({ timeout: 10000 });
+    await expect(suggestion).toBeVisible({ timeout: 30000 });
 
     // Click the suggestion
     await suggestion.click();

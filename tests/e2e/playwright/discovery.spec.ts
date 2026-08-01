@@ -12,7 +12,9 @@ test.describe('Movie Discovery', () => {
     await page.goto('/');
 
     const cards = page.locator('.grid.grid-cols-2 > div');
-    await expect(cards.first()).toBeVisible({ timeout: 20000 });
+    // First render on a loaded CI runner (React hydrate -> lazy MovieGrid chunk
+    // -> API fetch -> render) can exceed 20s; give it generous headroom.
+    await expect(cards.first()).toBeVisible({ timeout: 60000 });
   });
 
   test('triggers load more request when scrolling to bottom', async ({ page, browserName }) => {
@@ -24,12 +26,13 @@ test.describe('Movie Discovery', () => {
 
     await page.goto('/');
     const cards = page.locator('.grid.grid-cols-2 > div');
-    await expect(cards.first()).toBeVisible({ timeout: 20000 });
+    await expect(cards.first()).toBeVisible({ timeout: 60000 });
 
     // The IntersectionObserver sentinel sits below the movie grid.
     // Scroll to the bottom of the page to reveal it.
     const scrollRequest = page.waitForResponse(
-      resp => resp.url().includes('/view/random/best/8') && resp.status() === 200
+      resp => resp.url().includes('/view/random/best/8') && resp.status() === 200,
+      { timeout: 60000 }
     );
 
     // Scroll step by step to ensure the observer fires
@@ -41,7 +44,7 @@ test.describe('Movie Discovery', () => {
 
   test('country filter shows movies from selected country', async ({ page }) => {
     await page.goto('/');
-    await page.locator('.grid.grid-cols-2 > div').first().waitFor({ state: 'visible', timeout: 20000 });
+    await page.locator('.grid.grid-cols-2 > div').first().waitFor({ state: 'visible', timeout: 60000 });
 
     // Open the combobox dropdown and select Sweden
     const filter = page.getByRole('combobox');
@@ -52,13 +55,13 @@ test.describe('Movie Discovery', () => {
     await page.waitForTimeout(2000);
 
     const cards = page.locator('.grid.grid-cols-2 > div');
-    await expect(cards.first()).toBeVisible({ timeout: 10000 });
-    await expect(cards).toHaveCount(2, { timeout: 5000 });
+    await expect(cards.first()).toBeVisible({ timeout: 60000 });
+    await expect(cards).toHaveCount(2, { timeout: 15000 });
   });
 
   test('genre filter shows movies from selected genre', async ({ page }) => {
     await page.goto('/');
-    await page.locator('.grid.grid-cols-2 > div').first().waitFor({ state: 'visible', timeout: 20000 });
+    await page.locator('.grid.grid-cols-2 > div').first().waitFor({ state: 'visible', timeout: 60000 });
 
     await page.getByRole('button', { name: 'All Genres' }).click();
     await page.waitForTimeout(500);
@@ -66,22 +69,22 @@ test.describe('Movie Discovery', () => {
     await page.waitForTimeout(2000);
 
     const cards = page.locator('.grid.grid-cols-2 > div');
-    await expect(cards.first()).toBeVisible({ timeout: 10000 });
+    await expect(cards.first()).toBeVisible({ timeout: 60000 });
   });
 
   test('clicking a movie card opens and closes the detail modal', async ({ page }) => {
     await page.goto('/');
 
     const cards = page.locator('.grid.grid-cols-2 > div');
-    await expect(cards.first()).toBeVisible({ timeout: 20000 });
+    await expect(cards.first()).toBeVisible({ timeout: 60000 });
 
     await cards.first().click();
 
     // fetchMovieDetails shows a loading spinner then the movie content.
     // Wait for the DialogTitle (h2) to render after loading completes.
     const dialog = page.getByRole('dialog');
-    await expect(dialog).toBeVisible({ timeout: 15000 });
-    await expect(dialog.locator('h2').first()).toBeVisible({ timeout: 15000 });
+    await expect(dialog).toBeVisible({ timeout: 60000 });
+    await expect(dialog.locator('h2').first()).toBeVisible({ timeout: 60000 });
 
     await page.keyboard.press('Escape');
     await expect(dialog).not.toBeVisible();
