@@ -21,10 +21,24 @@ export default defineConfig({
   workers: process.env.CI ? 1 : 3,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: 'html',
+  /*
+   * Per-test timeout. Grid-render assertions wait up to 60s on CI-loaded
+   * runners (7 containers + browser share 2 cores), so the test-level
+   * timeout must stay above the longest assertion timeout. Without this,
+   * Playwright's default 30s test timeout truncates those waits.
+   */
+  timeout: 120_000,
+  /* Default assertion timeout — headroom for lazy-loaded pages/nav under CI load. */
+  expect: {
+    timeout: 15_000,
+  },
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
     baseURL: 'http://localhost',
+
+    /* Allow extra time for initial page loads on a loaded CI runner. */
+    navigationTimeout: 60_000,
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
