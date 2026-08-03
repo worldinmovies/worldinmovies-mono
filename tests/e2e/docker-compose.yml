@@ -39,6 +39,10 @@ services:
       - 5672
     ports:
       - 15672:15672
+    volumes:
+      # RabbitMQ 4.3+ denies transient non-exclusive queues by default, which
+      # Celery/kombu pidbox + event queues rely on. Permit until app hardens.
+      - ./rabbitmq/deprecated-features.conf:/etc/rabbitmq/conf.d/30-deprecated-features.conf:ro
     environment:
       - RABBITMQ_URL=${RABBITMQ_URL:-rabbitmq}
       - RABBITMQ_DEFAULT_USER=${MQ_USER:-seppa}
