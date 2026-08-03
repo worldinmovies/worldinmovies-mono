@@ -4,11 +4,10 @@
   "properties": {
     "secrets": {
       "type": "object",
-      "description": "Secret values — must not contain REPLACE_ME placeholder",
+      "description": "Secret values — real values supplied at install/upgrade time",
       "properties": {
         "SENTRY_DSN": {
-          "type": "string",
-          "pattern": "^(?!REPLACE_ME).*"
+          "type": "string"
         }
       }
     }
