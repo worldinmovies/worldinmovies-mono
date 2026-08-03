@@ -7,6 +7,11 @@ on:
     branches: [ "main" ]
   workflow_dispatch:
 
+# Prevent stale runs from piling up: a new run on the same ref cancels the previous one.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   backend-test:
     name: Backend tests
@@ -81,12 +86,18 @@ jobs:
   build-webapp:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     name: Build webapp Docker image
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     needs: [frontend-test]
     strategy:
       fail-fast: true
       matrix:
-        platform: ["linux/amd64", "linux/arm64"]
+        include:
+          # amd64 on the standard x64 runner
+          - platform: linux/amd64
+            runner: ubuntu-latest
+          # arm64 built natively (no QEMU): full Vite build is ~5x faster than emulation
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
     steps:
       - name: Prepare
         run: |
@@ -122,8 +133,15 @@ jobs:
           tags: |
             seppaleinen/worldinmovies_webapp:${{ github.sha }}-${{ env.PLATFORM_PAIR }}
           push: true
-          cache-from: type=registry,ref=seppaleinen/worldinmovies_webapp:latest
-          cache-to: type=inline
+          # gha cache with mode=max exports intermediate build-stage layers (pnpm install/build),
+          # scoped per image+platform so amd64/arm64 legs don't contend for the same cache.
+          # Registry :latest inline cache kept only as a bootstrap fallback.
+          cache-from: |
+            type=gha,scope=ci-webapp-${{ env.PLATFORM_PAIR }}
+            type=registry,ref=seppaleinen/worldinmovies_webapp:latest
+          cache-to: type=gha,mode=max,scope=ci-webapp-${{ env.PLATFORM_PAIR }}
+          # Skip SLSA provenance attestation: cuts manifest/push overhead, no effect on digests
+          provenance: false
       - name: Export digest
         run: |
           mkdir -p /tmp/digests-webapp
@@ -140,12 +158,18 @@ jobs:
   build-tmdb:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     name: Build TMDB Docker image
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     needs: [backend-test]
     strategy:
       fail-fast: true
       matrix:
-        platform: ["linux/amd64", "linux/arm64"]
+        include:
+          # amd64 on the standard x64 runner
+          - platform: linux/amd64
+            runner: ubuntu-latest
+          # arm64 built natively (no QEMU)
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
     steps:
       - name: Prepare
         run: |
@@ -177,8 +201,15 @@ jobs:
           tags: |
             seppaleinen/worldinmovies_tmdb:${{ github.sha }}-${{ env.PLATFORM_PAIR }}
           push: true
-          cache-from: type=registry,ref=seppaleinen/worldinmovies_tmdb:latest
-          cache-to: type=inline
+          # gha cache with mode=max exports intermediate build-stage layers (pip install),
+          # scoped per image+platform so amd64/arm64 legs don't contend for the same cache.
+          # Registry :latest inline cache kept only as a bootstrap fallback.
+          cache-from: |
+            type=gha,scope=ci-tmdb-${{ env.PLATFORM_PAIR }}
+            type=registry,ref=seppaleinen/worldinmovies_tmdb:latest
+          cache-to: type=gha,mode=max,scope=ci-tmdb-${{ env.PLATFORM_PAIR }}
+          # Skip SLSA provenance attestation: cuts manifest/push overhead, no effect on digests
+          provenance: false
       - name: Export digest
         run: |
           mkdir -p /tmp/digests
