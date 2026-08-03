@@ -86,20 +86,11 @@ export const useMovies = (selectedCountry?: string | null) => {
       } catch (error) {
         Sentry.captureException(error);
         console.error(`Error loading movies: ${JSON.stringify(error)}`);
-        // Fallback to mock data on error
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        const shuffled = shuffleArray([...MOVIE_DATABASE]);
-        const existingIds = shouldReset ? new Set() : new Set(movies.map((m) => m.id));
-        const newMovies = shuffled
-          .filter((movie) => !existingIds.has(movie.id))
-          .slice(0, 6);
-
-        if (newMovies.length === 0) {
-          setHasMore(false);
-        } else {
-          setMovies((prev) => shouldReset ? newMovies : [...prev, ...newMovies]);
-        }
+        // Do NOT silently fall back to MOVIE_DATABASE — it is empty, so the
+        // grid would render zero cards with no visible error. Surface the
+        // failure and stop the observer from retrying.
+        toast.error("Failed to load movies. Please try again.");
+        setHasMore(false);
       }
 
       setLoading(false);
@@ -139,6 +130,7 @@ export const useMovies = (selectedCountry?: string | null) => {
     } catch (error) {
       Sentry.captureException(error);
       console.error("Error loading movies for country:", error);
+      toast.error("Failed to load movies for this country.");
     }
 
     setLoading(false);
