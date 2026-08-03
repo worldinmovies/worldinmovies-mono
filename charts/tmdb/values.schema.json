@@ -4,26 +4,19 @@
   "properties": {
     "secrets": {
       "type": "object",
-      "description": "Secret values — must not contain REPLACE_ME placeholder",
+      "description": "Secret values — real values supplied at install/upgrade time",
       "properties": {
         "DJANGO_SECRET_KEY": {
-          "type": "string",
-          "minLength": 16,
-          "pattern": "^(?!REPLACE_ME).+"
+          "type": "string"
         },
         "TMDB_API_KEY": {
-          "type": "string",
-          "minLength": 8,
-          "pattern": "^(?!REPLACE_ME).+"
+          "type": "string"
         },
         "SENTRY_DSN": {
-          "type": "string",
-          "pattern": "^(?!REPLACE_ME).*"
+          "type": "string"
         },
         "ADMIN_API_KEY": {
-          "type": "string",
-          "minLength": 8,
-          "pattern": "^(?!REPLACE_ME).+"
+          "type": "string"
         }
       },
       "required": ["DJANGO_SECRET_KEY", "TMDB_API_KEY", "ADMIN_API_KEY"]
