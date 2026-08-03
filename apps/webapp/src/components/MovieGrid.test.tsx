@@ -114,6 +114,22 @@ describe('MovieGrid', () => {
     expect(screen.getByText('France')).toBeInTheDocument();
   });
 
+  // ── 2b. E2E DOM contract ──────────────────────────────────────────────
+  // The Playwright suite locates cards via `.grid.grid-cols-2 > div`, so the
+  // MovieCard root must be a <div> DIRECT child of the grid (not wrapped in
+  // an <a>). Regression: 65f6bcb wrapped cards in <Link>, making the locator
+  // match zero elements and blanking the grid in every discovery/search E2E.
+  it('renders movie cards as direct div children of the grid (E2E selector .grid.grid-cols-2 > div)', () => {
+    setUseMovies({ movies: mockMovies });
+
+    const { container } = render(<MovieGrid />);
+
+    const grid = container.querySelector('.grid.grid-cols-2');
+    expect(grid).not.toBeNull();
+    const matchedByE2eSelector = container.querySelectorAll('.grid.grid-cols-2 > div');
+    expect(matchedByE2eSelector.length).toBe(mockMovies.length);
+  });
+
   // ── 3. loadMoreMovies called on mount ──────────────────────────────────
   it('calls loadMoreMovies on mount', () => {
     render(<MovieGrid />);

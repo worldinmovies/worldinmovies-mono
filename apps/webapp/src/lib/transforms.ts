@@ -2,6 +2,19 @@ import { Movie, DiscoverMovie } from "@/lib/models";
 
 const regionNames = new Intl.DisplayNames(["en"], { type: "region" });
 
+// Intl.DisplayNames.of() throws RangeError for malformed region codes
+// (e.g. empty/whitespace). Never let a single bad code nuke a whole batch
+// of mapped movies — fall back to the raw code instead.
+const countryName = (code?: string): string => {
+  const trimmed = code?.trim();
+  if (!trimmed) return "Unknown";
+  try {
+    return regionNames.of(trimmed) || trimmed;
+  } catch {
+    return trimmed;
+  }
+};
+
 export const shuffleArray = (array: Movie[]) => {
   const shuffled = [...array];
   for (let i = shuffled.length - 1; i > 0; i--) {
@@ -16,9 +29,7 @@ export const transferDiscoverMovie = (m: DiscoverMovie): Movie => {
     id: m._id,
     title: m.original_title,
     year: m.year,
-    country: m.estimated_country
-      ? regionNames.of(m.estimated_country)
-      : "Unknown",
+    country: countryName(m.estimated_country),
     countryCode: m.estimated_country || "",
     countryFlag: m.estimated_country
       ? `https://flagcdn.com/16x12/${m.estimated_country.toLowerCase()}.png`
@@ -38,9 +49,7 @@ export const transferBackendMovie = (m: import("@/lib/models").BackendMovie): Mo
     id: m._id,
     title: m.original_title,
     year: m.year,
-    country: m.estimated_country
-      ? regionNames.of(m.estimated_country)
-      : "Unknown",
+    country: countryName(m.estimated_country),
     countryCode: m.estimated_country || "",
     countryFlag: m.estimated_country
       ? `https://flagcdn.com/16x12/${m.estimated_country.toLowerCase()}.png`
