@@ -110,6 +110,11 @@ mq_pass = os.environ['RABBITMQ_DEFAULT_PASS']
 CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', f"amqp://{mq_user}:{mq_pass}@{rabbit_url}")
 CELERY_TIMEZONE = "Europe/Stockholm"
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+# Declare pidbox control + event queues as exclusive so RabbitMQ 4.3+ no
+# longer needs the deprecated transient_nonexcl_queues permit. These match
+# the defaults Celery 5.7/kombu 5.6 will ship with.
+CELERY_CONTROL_QUEUE_EXCLUSIVE = True
+CELERY_EVENT_QUEUE_EXCLUSIVE = True
 
 ROOT_URLCONF = 'settings.urls'
 ASGI_APPLICATION = 'settings.asgi.application'

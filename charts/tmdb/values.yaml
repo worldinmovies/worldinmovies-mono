@@ -20,12 +20,6 @@ rabbitmq:
     requests:
       cpu: 250m
       memory: 196Mi
-  # -- Permit the deprecated transient non-exclusive queue pattern used by
-  # -- Celery/kombu (pidbox control + event queues). RabbitMQ 4.3+ denies it by
-  # -- default (541 INTERNAL_ERROR on queue.declare), breaking Celery workers.
-  # -- Remove once the Celery app hardens its queues (e.g. Celery 5.7+ defaults).
-  extraConfiguration: |-
-    deprecated_features.permit.transient_nonexcl_queues = true
 
 # -- External service endpoints (used when sub-charts are disabled).
 external:

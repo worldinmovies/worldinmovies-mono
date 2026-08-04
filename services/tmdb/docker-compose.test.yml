@@ -51,10 +51,6 @@ services:
       - "5672:5672"
       - "15672:15672"
     container_name: tmdb-test-rabbitmq
-    volumes:
-      # RabbitMQ 4.3+ denies transient non-exclusive queues by default, which
-      # Celery/kombu pidbox + event queues rely on. Permit until app hardens.
-      - ./rabbitmq/deprecated-features.conf:/etc/rabbitmq/conf.d/30-deprecated-features.conf:ro
     environment:
       RABBITMQ_DEFAULT_USER: seppa
       RABBITMQ_DEFAULT_PASS: password
