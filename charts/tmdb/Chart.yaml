@@ -5,7 +5,7 @@ home: https://github.com/worldinmovies/worldinmovies-mono
 sources:
   - https://github.com/worldinmovies/worldinmovies-mono
 type: application
-version: 0.2.2
+version: 0.2.3
 appVersion: latest
 dependencies:
   - name: mongodb
