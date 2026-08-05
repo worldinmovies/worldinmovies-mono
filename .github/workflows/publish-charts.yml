@@ -40,13 +40,20 @@ jobs:
             CHART_LIST=$(echo "$ALL_CHARTS" | tr '\n' ' ')
           else
             # push: only publish charts with changes
-            CHANGED=$(git diff --name-only "${{ github.event.before }}".."${{ github.event.after }}" -- charts/)
-            CHART_LIST=""
-            for name in $ALL_CHARTS; do
-              if echo "$CHANGED" | grep -q "^charts/$name/"; then
-                CHART_LIST+="$name "
-              fi
-            done
+            BEFORE="${{ github.event.before }}"
+            AFTER="${{ github.event.after }}"
+            if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+              # First push to the branch (no parent commit): publish everything
+              CHART_LIST=$(echo "$ALL_CHARTS" | tr '\n' ' ')
+            else
+              CHANGED=$(git diff --name-only "$BEFORE".."$AFTER" -- charts/)
+              CHART_LIST=""
+              for name in $ALL_CHARTS; do
+                if echo "$CHANGED" | grep -q "^charts/$name/"; then
+                  CHART_LIST+="$name "
+                fi
+              done
+            fi
           fi
           echo "list=$CHART_LIST" >> "$GITHUB_OUTPUT"
           echo "Charts to publish: [$CHART_LIST]"
@@ -88,8 +95,8 @@ jobs:
             helm push "/tmp/helm-packages/$CHART-$VERSION.tgz" \
               oci://ghcr.io/worldinmovies/charts
 
-            # Compute bump type from commit message
-            MSG="${{ github.event.head_commit.message }}"
+            # Compute bump type from commit message (empty on workflow_dispatch → patch)
+            MSG=$(jq -r '.head_commit.message // ""' "$GITHUB_EVENT_PATH")
             if echo "$MSG" | grep -q "BREAKING CHANGE"; then
               BUMP="major"
             elif echo "$MSG" | grep -qiE "^feat(\(.+\))?:"; then
