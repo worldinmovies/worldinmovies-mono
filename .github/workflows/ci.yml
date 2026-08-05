@@ -82,6 +82,19 @@ jobs:
     - name: Run tests
       run: pnpm vitest run
 
+  chart-lint:
+    name: Lint Helm charts
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+    - name: Install Helm
+      uses: azure/setup-helm@v5
+    - name: Lint all charts
+      run: |
+        for chart in charts/*/; do
+          helm lint "$chart"
+        done
+
   # Build + push multi-arch images on push to main only
   build-webapp:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -299,6 +312,7 @@ jobs:
     name: Integration tests
     runs-on: ubuntu-latest
     needs: [merge-tmdb-manifest, merge-webapp-manifest]
+    timeout-minutes: 20
     steps:
     - uses: actions/checkout@v7
     - name: Install pnpm
@@ -354,7 +368,7 @@ jobs:
         echo "VITE_WEBAPP_PORT=80" > .env
         echo "DJANGO_SECRET_KEY="$(uuidgen) >> .env
         echo "ADMIN_API_KEY=$ADMIN_KEY" >> .env
-        docker compose up -d || docker compose up -d
+        docker compose up -d --wait --wait-timeout 300
           docker cp datasubset/tmdb.movie.json mongo:/
           docker cp datasubset/tmdb.flattened_movie.json mongo:/
           ./wait_until_running.sh
@@ -362,16 +376,16 @@ jobs:
           docker exec mongo mongoimport --authenticationDatabase admin --authenticationMechanism SCRAM-SHA-256 -u seppa -p password -d tmdb -c movie --mode upsert --jsonArray --type json --file tmdb.flattened_movie.json
           # Trigger Meilisearch indexing so the search E2E tests have data
           curl -X POST -H "X-API-Key: $ADMIN_KEY" http://localhost:8020/index/movies
-          # Poll Meilisearch until at least one result appears (or timeout after 120s)
+          # Wait until at least one search result is available, else fail (max 120s)
           for i in $(seq 1 60); do
             sleep 2
-            RESP=$(curl -s http://localhost:8020/search/movies/ariel)
-            if echo "$RESP" | grep -q '"hits":\[{"'; then
+            if curl -s http://localhost:8020/search/movies/ariel | jq -e '.hits | length > 0' > /dev/null 2>&1; then
               echo "Meilisearch indexed successfully"
               break
             fi
             if [ "$i" -eq 60 ]; then
-              echo "WARNING: Meilisearch indexing may not have completed — search E2E tests may fail"
+              echo "::error::Meilisearch indexing did not complete within 120s — search E2E tests cannot run"
+              exit 1
             fi
           done
           # Seed DiscoveryMovie data into MongoDB for grid/country/genre tests
@@ -400,6 +414,14 @@ jobs:
       working-directory: tests/e2e
       run: |
         docker compose logs; docker ps -a
+    - name: Upload Playwright results
+      if: ${{ failure() }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: playwright-test-results
+        path: tests/e2e/test-results
+        if-no-files-found: ignore
+        retention-days: 7
     - name: Stop containers
       if: ${{ always() }}
       working-directory: tests/e2e

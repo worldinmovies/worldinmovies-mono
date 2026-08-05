@@ -36,4 +36,5 @@ RUN touch db.sqlite3 && chown appuser:appuser db.sqlite3 && chown appuser:appuse
 
 USER appuser
 
-ENTRYPOINT ["/bin/sh", "-c", "python manage.py migrate --noinput && python manage.py crontab add && crond & hypercorn --config=gunicorn.config.py settings.asgi:application"]
+ENTRYPOINT ["/bin/sh", "-c", "python manage.py migrate --noinput && python manage.py crontab add && crond & exec \"$@\"", "sh"]
+CMD ["hypercorn", "--config=gunicorn.config.py", "settings.asgi:application"]
