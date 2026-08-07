@@ -15,8 +15,8 @@ services:
       timeout: 20s
       start_period: 10s
     environment:
-      MONGO_INITDB_ROOT_USERNAME: seppa
-      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-devmongo}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-devmongo-pass}
       MONGO_INITDB_DATABASE: tmdb
 
   # Queues
@@ -41,8 +41,8 @@ services:
       - 15672:15672
     environment:
       - RABBITMQ_URL=${RABBITMQ_URL:-rabbitmq}
-      - RABBITMQ_DEFAULT_USER=${MQ_USER:-seppa}
-      - RABBITMQ_DEFAULT_PASS=${MQ_PASS:-password}
+      - RABBITMQ_DEFAULT_USER=${MQ_USER:-devmq}
+      - RABBITMQ_DEFAULT_PASS=${MQ_PASS:-devmq-pass}
     healthcheck:
       test: rabbitmq-diagnostics -q ping
       interval: 30s
@@ -57,7 +57,7 @@ services:
     ports:
       - 7700:7700
     environment:
-      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY:-BiX78W32AeClhKF_FYfkVsFmiaJJ0amhwTPInYtHUhY}
+      - MEILI_MASTER_KEY=${MEILI_KEY:-local-dev-meili-key-change-me}
     healthcheck:
       test: [CMD, curl, -f, http://localhost:7700]
       interval: 10s
@@ -72,17 +72,17 @@ services:
       - 8020:8020
     environment:
       - TMDB_API=${TMDB_API}
-      - MEILISEARCH_API_KEY=${MEILI_MASTER_KEY:-BiX78W32AeClhKF_FYfkVsFmiaJJ0amhwTPInYtHUhY}
+      - MEILISEARCH_API_KEY=${MEILI_KEY:-local-dev-meili-key-change-me}
       - SENTRY_API=${SENTRY_API_TMDB:-}
-      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-please-change-me}
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-dev-django-secret-key}
       - ADMIN_API_KEY=${ADMIN_API_KEY:-}
       - REDIS_URL=${REDIS_URL:-redis://redis}
       - MONGO_URL=${MONGO_URL:-mongo}
-      - MONGO_USER=${MONGO_USER:-seppa}
-      - MONGO_PASSWORD=${MONGO_PASSWORD:-password}
+      - MONGO_USER=${MONGO_USER:-devmongo}
+      - MONGO_PASSWORD=${MONGO_PASSWORD:-devmongo-pass}
       - RABBITMQ_URL=${RABBITMQ_URL:-rabbitmq}
-      - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER:-seppa}
-      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS:-password}
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER:-devmq}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS:-devmq-pass}
     depends_on:
       mongo:
         condition: service_healthy
@@ -102,17 +102,17 @@ services:
     container_name: tmdb-worker
     environment:
       - TMDB_API=${TMDB_API}
-      - MEILISEARCH_API_KEY=${MEILI_MASTER_KEY:-BiX78W32AeClhKF_FYfkVsFmiaJJ0amhwTPInYtHUhY}
+      - MEILISEARCH_API_KEY=${MEILI_KEY:-local-dev-meili-key-change-me}
       - SENTRY_API=${SENTRY_API_TMDB:-}
-      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-please-change-me}
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-dev-django-secret-key}
       - ADMIN_API_KEY=${ADMIN_API_KEY:-}
       - REDIS_URL=${REDIS_URL:-redis://redis}
       - MONGO_URL=${MONGO_URL:-mongo}
-      - MONGO_USER=${MONGO_USER:-seppa}
-      - MONGO_PASSWORD=${MONGO_PASSWORD:-password}
+      - MONGO_USER=${MONGO_USER:-devmongo}
+      - MONGO_PASSWORD=${MONGO_PASSWORD:-devmongo-pass}
       - RABBITMQ_URL=${RABBITMQ_URL:-rabbitmq}
-      - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER:-seppa}
-      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS:-password}
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER:-devmq}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS:-devmq-pass}
     depends_on:
       mongo:
         condition: service_healthy
