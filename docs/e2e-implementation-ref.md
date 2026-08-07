@@ -203,19 +203,21 @@ Genres: Drama, Comedy, Action, Romance, Crime, Fantasy, Thriller
 
 ## seed.sh Environment Variables
 
+Values shown are local-only fixture defaults — see `tests/e2e/.env.example`; generate your own for anything shared.
+
 ```
-MONGO_HOST=localhost          # MongoDB host
-MONGO_USER=seppa              # MongoDB user
-MONGO_PASS=password            # MongoDB password
-MONGO_DB=tmdb                  # MongoDB database
-MONGO_COLLECTION=discoverymovie  # MongoDB collection
-MEILI_HOST=localhost           # Meilisearch host
-MEILI_PORT=7700               # Meilisearch port
-MEILI_KEY=BiX78W32AeClhKF_FYfkVsFmiaJJ0amhwTPInYtHUhY
+MONGO_HOST=localhost                  # MongoDB host
+MONGO_USER=devmongo                   # MongoDB user (fixture default)
+MONGO_PASS=devmongo-pass              # MongoDB password (fixture default)
+MONGO_DB=tmdb                         # MongoDB database
+MONGO_COLLECTION=discoverymovie       # MongoDB collection
+MEILI_HOST=localhost                  # Meilisearch host
+MEILI_PORT=7700                       # Meilisearch port
+MEILI_KEY=local-dev-meili-key-change-me  # Meilisearch key (fixture default, overridable via MEILI_KEY)
 ```
 
-From container network: `HOST_PREFIX=container ./seed.sh`
-From host: `./seed.sh`
+From the host against the compose stack: `HOST_PREFIX=container ./seed.sh`
+From host with plain Mongo/Meilisearch: `./seed.sh`
 
 ---
 
@@ -287,13 +289,15 @@ genres ← genres
 
 | Service | Container name | Host port | Notes |
 |---------|---------------|-----------|-------|
-| mongo | mongo | 27017 | User: seppa / password, authSource=admin (SCRAM-SHA-256) |
+| mongo | mongo | 27017 | User: devmongo / devmongo-pass (`${MONGO_USER:-devmongo}` / `${MONGO_PASSWORD:-devmongo-pass}`), authSource=admin (SCRAM-SHA-256) |
 | redis | redis | — | Internal only |
-| rabbitmq | rabbitmq | 15672 (mgmt) | User: seppa / password |
-| meilisearch | (auto) | 7700 | Key: BiX78W32AeClhKF_FYfkVsFmiaJJ0amhwTPInYtHUhY |
+| rabbitmq | rabbitmq | 15672 (mgmt) | User: devmq / devmq-pass (`${MQ_USER:-devmq}` / `${MQ_PASS:-devmq-pass}`) |
+| meilisearch | (auto) | 7700 | Key: `${MEILI_KEY:-local-dev-meili-key-change-me}` |
 | tmdb | tmdb | 8020 | Django hypercorn ASGI |
 | tmdb-worker | tmdb-worker | — | Celery worker |
 | webapp | (auto) | ${VITE_WEBAPP_PORT} | Default 80 |
+
+Fixture credentials for the stack are documented in `tests/e2e/.env.example`.
 
 ---
 
