@@ -4,7 +4,7 @@
 # with a known set of movies for deterministic flow-based testing.
 #
 # Usage: ./seed.sh              # defaults to localhost
-# Usage: HOST_PREFIX=container  ./seed.sh   # from inside docker network
+# Usage: HOST_PREFIX=container  ./seed.sh   # from the host, against the compose stack
 #
 # Extending: To add more movies, edit seed-data.json and re-run this script.
 # No schema changes needed — just append a new record to the JSON array.
@@ -16,21 +16,22 @@ SEED_FILE="$SCRIPT_DIR/seed-data.json"
 
 # --- Config ---
 MONGO_HOST="${MONGO_HOST:-localhost}"
-MONGO_USER="${MONGO_USER:-seppa}"
-MONGO_PASS="${MONGO_PASS:-password}"
+MONGO_USER="${MONGO_USER:-devmongo}"
+MONGO_PASS="${MONGO_PASS:-devmongo-pass}"
 MONGO_DB="${MONGO_DB:-tmdb}"
 MONGO_COLLECTION="${MONGO_COLLECTION:-discoverymovie}"
 
 MEILI_HOST="${MEILI_HOST:-localhost}"
 MEILI_PORT="${MEILI_PORT:-7700}"
-MEILI_KEY="${MEILI_KEY:-***REMOVED***}"
+MEILI_KEY="${MEILI_KEY:-local-dev-meili-key-change-me}"
 MEILI_INDEX="${MEILI_INDEX:-movies}"
 
-# If HOST_PREFIX=container is set, use docker exec for mongo and container names for meili
+# If HOST_PREFIX=container is set, reach mongo via docker exec and meilisearch
+# via its published host port (meilisearch does not resolve by name from the host).
 if [ "${HOST_PREFIX:-}" = "container" ]; then
   MONGO_EXEC="docker exec -i mongo"
   MONGO_HOST_LOCAL="mongo"  # for mongoimport inside container
-  MEILI_URL="http://meilisearch:${MEILI_PORT}"
+  MEILI_URL="http://localhost:${MEILI_PORT}"
 else
   MONGO_EXEC=""
   MONGO_HOST_LOCAL="${MONGO_HOST}"
@@ -49,7 +50,7 @@ $MONGO_EXEC mongoimport \
   -c "${MONGO_COLLECTION}" \
   --mode upsert \
   --jsonArray \
-  --file - < "$SEED_FILE"
+  < "$SEED_FILE"
 
 echo "=== Configuring Meilisearch index settings ==="
 

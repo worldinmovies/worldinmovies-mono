@@ -79,7 +79,8 @@ This catches regressions in both MongoDB query paths and Meilisearch search/inde
 
 ```bash
 # 1. mongoimport DiscoveryMovie records (upsert mode, safe to re-run)
-docker exec -i mongo mongoimport -u seppa -p password \
+# Uses the stack fixture defaults (see tests/e2e/.env.example); override via env vars
+docker exec -i mongo mongoimport -u "${MONGO_USER:-devmongo}" -p "${MONGO_PASS:-devmongo-pass}" \
   --db tmdb --collection discoverymovie --mode upsert \
   --jsonArray < seed-data.json
 
