@@ -363,15 +363,19 @@ jobs:
         WEBAPP_IMAGE: seppaleinen/worldinmovies_webapp:ci-local
       run: |
         ADMIN_KEY=$(uuidgen)
+        MEILI_KEY=$(openssl rand -hex 16)
         echo "VITE_WEBAPP_PORT=80" > .env
         echo "DJANGO_SECRET_KEY="$(uuidgen) >> .env
         echo "ADMIN_API_KEY=$ADMIN_KEY" >> .env
+        echo "MEILI_KEY=$MEILI_KEY" >> .env
+        # Export fixture creds so the shared seed script and mongoimports use them
+        export MEILI_KEY=$MEILI_KEY MONGO_USER=devmongo MONGO_PASSWORD=devmongo-pass MONGO_PASS=devmongo-pass
         docker compose up -d --wait --wait-timeout 300
           docker cp datasubset/tmdb.movie.json mongo:/
           docker cp datasubset/tmdb.flattened_movie.json mongo:/
           ./wait_until_running.sh
-          docker exec mongo mongoimport --authenticationDatabase admin --authenticationMechanism SCRAM-SHA-256 -u seppa -p password -d tmdb -c movie --mode upsert --jsonArray --type json --file tmdb.movie.json
-          docker exec mongo mongoimport --authenticationDatabase admin --authenticationMechanism SCRAM-SHA-256 -u seppa -p password -d tmdb -c movie --mode upsert --jsonArray --type json --file tmdb.flattened_movie.json
+          docker exec mongo mongoimport --authenticationDatabase admin --authenticationMechanism SCRAM-SHA-256 -u "$MONGO_USER" -p "$MONGO_PASSWORD" -d tmdb -c movie --mode upsert --jsonArray --type json --file tmdb.movie.json
+          docker exec mongo mongoimport --authenticationDatabase admin --authenticationMechanism SCRAM-SHA-256 -u "$MONGO_USER" -p "$MONGO_PASSWORD" -d tmdb -c movie --mode upsert --jsonArray --type json --file tmdb.flattened_movie.json
           # Trigger Meilisearch indexing so the search E2E tests have data
           curl -X POST -H "X-API-Key: $ADMIN_KEY" http://localhost:8020/index/movies
           # Wait until at least one search result is available, else fail (max 120s)
@@ -386,21 +390,8 @@ jobs:
               exit 1
             fi
           done
-          # Seed DiscoveryMovie data into MongoDB for grid/country/genre tests
-          docker cp seed/seed-data.json mongo:/
-          docker exec mongo mongoimport \
-            --authenticationDatabase admin \
-            --authenticationMechanism SCRAM-SHA-256 \
-            -u seppa -p password \
-            -d tmdb -c discoverymovie \
-            --mode upsert --jsonArray --type json \
-            --file seed-data.json
-          # Push DiscoveryMovie documents to Meilisearch for search tests
-          jq -c '.[] | {id: ._id, title: .english_title, original_title: .original_title, alternative_titles: [], overview: .overview, directors: [.director], weighted_rating: .weighted_rating, vote_average: .vote_average, vote_count: .vote_count, guessed_country: .estimated_country, original_language: (if .estimated_country == "JP" then "ja" elif .estimated_country == "KR" then "ko" elif .estimated_country == "FR" then "fr" elif .estimated_country == "IT" then "it" elif .estimated_country == "FI" then "fi" elif .estimated_country == "SE" then "sv" elif .estimated_country == "HK" then "zh" else "en" end), poster: .poster_path, year: .year}' seed/seed-data.json | jq -s '.' | \
-            curl -sf -X POST "http://localhost:7700/indexes/movies/documents" \
-              -H "Authorization: Bearer BiX78W32AeClhKF_FYfkVsFmiaJJ0amhwTPInYtHUhY" \
-              -H "Content-Type: application/json" \
-              -d @- > /dev/null && echo "DiscoveryMovie seed indexed in Meilisearch"
+          # Seed DiscoveryMovie data into MongoDB and Meilisearch via the shared seed script
+          HOST_PREFIX=container ./seed/seed.sh
           pnpm e2e:test
           # K6 smoke load test after E2E tests pass
           docker run --rm --network host \
