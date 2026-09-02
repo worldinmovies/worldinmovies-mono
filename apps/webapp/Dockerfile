@@ -35,12 +35,7 @@ COPY apps/webapp/nginx/sites-enabled/app.conf.template /etc/nginx/conf.d/default
 RUN mkdir -p /opt/webapp/run && chown appuser:appuser /opt/webapp/run && \
     envsubst '$TMDB_UPSTREAM' < /etc/nginx/conf.d/default.conf.template > /opt/webapp/run/default.conf && \
     chown appuser:appuser /opt/webapp/run/default.conf && \
-    P=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 16) && \
-    printf 'admin:%s\n' "$(openssl passwd -apr1 "$P")" > /opt/webapp/run/.htpasswd && \
-    chown appuser:appuser /opt/webapp/run/.htpasswd && \
-    echo "Build-time admin password: $P" && \
     ln -sf /opt/webapp/run/default.conf /etc/nginx/conf.d/default.conf && \
-    ln -sf /opt/webapp/run/.htpasswd /etc/nginx/.htpasswd && \
     # Make nginx directories writable by appuser (cache temp, logs, PID)
     mkdir -p /var/cache/nginx /var/log/nginx && \
     chown -R appuser:appuser /var/cache/nginx /var/log/nginx /run
@@ -48,6 +43,8 @@ RUN mkdir -p /opt/webapp/run && chown appuser:appuser /opt/webapp/run && \
 USER appuser
 EXPOSE 80
 
-ENV ADMIN_PASSWORD=""
+# Admin password is supplied at runtime via the ADMIN_PASSWORD env var (sourced
+# from a Kubernetes Secret by the chart). If set, the entrypoint writes .htpasswd
+# from it; otherwise no basic-auth password is configured for /admin.
 
-ENTRYPOINT ["sh", "-c", "if [ -n \"$ADMIN_PASSWORD\" ]; then printf 'admin:%s\\n' \"$(openssl passwd -apr1 \"$ADMIN_PASSWORD\")\" > /opt/webapp/run/.htpasswd; fi && envsubst '$TMDB_UPSTREAM' < /etc/nginx/conf.d/default.conf.template > /opt/webapp/run/default.conf && exec nginx -g 'daemon off;'"]
+ENTRYPOINT ["sh", "-c", "if [ -n \"$ADMIN_PASSWORD\" ]; then printf 'admin:%s\\n' \"$(openssl passwd -apr1 \"$ADMIN_PASSWORD\")\" > /opt/webapp/run/.htpasswd && ln -sf /opt/webapp/run/.htpasswd /etc/nginx/.htpasswd; fi && envsubst '$TMDB_UPSTREAM' < /etc/nginx/conf.d/default.conf.template > /opt/webapp/run/default.conf && exec nginx -g 'daemon off;'"]

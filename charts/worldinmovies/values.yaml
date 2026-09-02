@@ -121,3 +121,4 @@ webapp:
       value: tmdb.worldinmovies.svc.cluster.local:8020
   secrets:
     SENTRY_DSN: "REPLACE_ME"
+    ADMIN_PASSWORD: "REPLACE_ME"

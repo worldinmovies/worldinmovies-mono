@@ -141,6 +141,7 @@ services:
       - VITE_TMDB_URL=${VITE_TMDB_URL:-tmdb.localhost}
       - VITE_SENTRY_WEB=${VITE_SENTRY_WEB:-}
       - TMDB_UPSTREAM=tmdb:8020
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
 
 volumes:
   mongo_data:

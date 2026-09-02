@@ -29,6 +29,11 @@ env:
     value: tmdb.worldinmovies.svc.cluster.local:8020
 
 # -- Secrets (provide real values at install/upgrade time).
-# -- These are rendered as a Kubernetes Secret by the environment-secrets template.
+# -- These are rendered as a Kubernetes Secret by the environment-secrets template,
+# -- which the Deployment injects into the container via envFrom.secretRef.
+# -- ADMIN_PASSWORD becomes the $ADMIN_PASSWORD env var the webapp entrypoint uses
+# -- to write nginx's .htpasswd at runtime. Supplied by fleet-infra via SOPS.
+# -- Empty/unset → /admin is served without basic auth.
 secrets:
   SENTRY_DSN: "REPLACE_ME"
+  ADMIN_PASSWORD: "REPLACE_ME"

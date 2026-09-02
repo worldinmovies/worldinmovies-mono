@@ -8,6 +8,9 @@
       "properties": {
         "SENTRY_DSN": {
           "type": "string"
+        },
+        "ADMIN_PASSWORD": {
+          "type": "string"
         }
       }
     }
