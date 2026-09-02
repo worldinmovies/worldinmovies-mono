@@ -141,9 +141,9 @@ jobs:
             yq -i ".version = \"$NEW_VERSION\"" Chart.yaml
             git add Chart.yaml
 
-            # Create tag
+            # Create tag (-f: overwrite if a prior failed run left a stale tag)
             TAG="helm/$CHART-$NEW_VERSION"
-            git tag "$TAG"
+            git tag -f "$TAG"
             echo "Tag: $TAG"
 
             cd "$REPO_ROOT"
