@@ -18,6 +18,7 @@ jobs:
     permissions:
       contents: write
       packages: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v7
         with:
@@ -132,19 +133,30 @@ jobs:
 
           echo ""
           echo "========================================"
-          echo "  Committing and pushing all changes"
+          echo "  Committing and creating PR for version bumps"
           echo "========================================"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           if ! git diff --cached --quiet; then
+            BRANCH="helm/bump-$(date +%s)"
+            git checkout -b "$BRANCH"
             git commit -m "chore(helm): bump chart versions [skip ci]"
-            git push
+            git push -u origin "$BRANCH"
+
+            # Create PR and auto-merge (requires auto-merge enabled in repo settings)
+            PR_URL=$(gh pr create \
+              --title "chore(helm): bump chart versions [skip ci]" \
+              --body "Automated version bump after chart publishing." \
+              --base main \
+              --head "$BRANCH")
+            echo "PR created: $PR_URL"
+            gh pr merge "$PR_URL" --squash --auto || echo "Auto-merge not enabled — merge the PR manually"
           else
             echo "No version bumps to commit."
           fi
 
-          # Push all chart tags
+          # Push chart tags (independent of branch protection)
           for CHART in $CHARTS; do
             cd "$REPO_ROOT/charts/$CHART"
             VERSION=$(yq '.version' Chart.yaml)
