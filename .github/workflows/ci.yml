@@ -315,7 +315,7 @@ jobs:
     name: Integration tests
     runs-on: ubuntu-latest
     needs: [backend-test, frontend-test]
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
     - uses: actions/checkout@v7
     - name: Install pnpm
@@ -327,6 +327,13 @@ jobs:
         cache: 'pnpm'
     - name: Install dependencies
       run: pnpm install --frozen-lockfile --filter @worldinmovies/e2e
+    # Cache Playwright browsers so the (intermittently slow) browser download is
+    # skipped on subsequent runs; keyed off the resolved Playwright version.
+    - name: Cache Playwright browsers
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/ms-playwright
+        key: pw-browsers-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
     - name: Install Playwright browsers
       run: pnpm --filter @worldinmovies/e2e exec playwright install --with-deps chromium firefox webkit
     # Images are always built locally from this job (never pushed to Docker Hub)
