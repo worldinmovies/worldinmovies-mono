@@ -51,6 +51,22 @@ jobs:
               CHART_LIST=""
               for name in $ALL_CHARTS; do
                 if echo "$CHANGED" | grep -q "^charts/$name/"; then
+                  # Break the auto-bump loop: if a chart's only change is its
+                  # Chart.yaml version bump (produced by a prior publish run) and
+                  # that version is already tagged/published, skip it. Real source
+                  # changes still publish regardless of the existing tag.
+                  ONLY_VERSION_BUMP=true
+                  for f in $CHANGED; do
+                    case "$f" in
+                      "charts/$name/Chart.yaml") ;;
+                      "charts/$name/"*) ONLY_VERSION_BUMP=false ;;
+                    esac
+                  done
+                  VER=$(yq '.version' "charts/$name/Chart.yaml")
+                  if [ "$ONLY_VERSION_BUMP" = true ] && git rev-parse "refs/tags/helm/$name-$VER" >/dev/null 2>&1; then
+                    echo "Skipping $name@$VER — only self-generated version bump, tag helm/$name-$VER already exists"
+                    continue
+                  fi
                   CHART_LIST+="$name "
                 fi
               done
@@ -143,12 +159,12 @@ jobs:
           if ! git diff --cached --quiet; then
             BRANCH="helm/bump-$(date +%s)"
             git checkout -b "$BRANCH"
-            git commit -m "chore(helm): bump chart versions [skip ci]"
+            git commit -m "chore(helm): bump chart versions"
             git push -u origin "$BRANCH"
 
             # Create PR and auto-merge (requires auto-merge enabled in repo settings)
             PR_URL=$(gh pr create \
-              --title "chore(helm): bump chart versions [skip ci]" \
+              --title "chore(helm): bump chart versions" \
               --body "Automated version bump after chart publishing." \
               --base main \
               --head "$BRANCH")
