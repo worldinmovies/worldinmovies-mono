@@ -62,6 +62,8 @@ jobs:
       - name: Publish each chart
         if: ${{ steps.charts.outputs.list != '' }}
         shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
           set -euo pipefail
           CHARTS="${{ steps.charts.outputs.list }}"
