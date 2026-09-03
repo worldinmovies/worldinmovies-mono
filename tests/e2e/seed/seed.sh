@@ -1,18 +1,20 @@
 #!/bin/bash
 # Seed script for E2E test data.
-# Populates MongoDB (discoverymovie collection) and Meilisearch (movies index)
-# with a known set of movies for deterministic flow-based testing.
+# Populates MongoDB (discoverymovie + movie collections) and Meilisearch
+# (movies index) with a known set of movies for deterministic flow-based testing.
 #
 # Usage: ./seed.sh              # defaults to localhost
 # Usage: HOST_PREFIX=container  ./seed.sh   # from the host, against the compose stack
 #
-# Extending: To add more movies, edit seed-data.json and re-run this script.
-# No schema changes needed — just append a new record to the JSON array.
+# Extending: To add more movies, edit seed-data.json (and matching entries in
+# seed-movies.json) and re-run this script. No schema changes needed — just
+# append a new record to the JSON arrays.
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SEED_FILE="$SCRIPT_DIR/seed-data.json"
+SEED_MOVIES_FILE="$SCRIPT_DIR/seed-movies.json"
 
 # --- Config ---
 MONGO_HOST="${MONGO_HOST:-localhost}"
@@ -20,6 +22,7 @@ MONGO_USER="${MONGO_USER:-devmongo}"
 MONGO_PASS="${MONGO_PASS:-devmongo-pass}"
 MONGO_DB="${MONGO_DB:-tmdb}"
 MONGO_COLLECTION="${MONGO_COLLECTION:-discoverymovie}"
+MONGO_MOVIE_COLLECTION="${MONGO_MOVIE_COLLECTION:-movie}"
 
 MEILI_HOST="${MEILI_HOST:-localhost}"
 MEILI_PORT="${MEILI_PORT:-7700}"
@@ -51,6 +54,21 @@ $MONGO_EXEC mongoimport \
   --mode upsert \
   --jsonArray \
   < "$SEED_FILE"
+
+echo "=== Seeding Movie data into MongoDB ==="
+# The routed /movie/:id page reads from the `movie` collection
+# (Movie.objects.get(id=id)). Seed it so detail pages render a real title.
+$MONGO_EXEC mongoimport \
+  --host "${MONGO_HOST_LOCAL}" \
+  --authenticationDatabase admin \
+  --authenticationMechanism SCRAM-SHA-256 \
+  -u "${MONGO_USER}" \
+  -p "${MONGO_PASS}" \
+  -d "${MONGO_DB}" \
+  -c "${MONGO_MOVIE_COLLECTION}" \
+  --mode upsert \
+  --jsonArray \
+  < "$SEED_MOVIES_FILE"
 
 echo "=== Configuring Meilisearch index settings ==="
 
