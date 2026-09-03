@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { MovieCard } from "./MovieCard";
 import { useMovies } from "@/hooks/useMovies";
-import { MovieDetailModal } from "./MovieDetailModal";
 import { MovieSearch } from "./MovieSearch";
 import { MovieFilters } from "./MovieFilters";
 import { Separator } from "./ui/separator";
@@ -9,7 +9,6 @@ import { Loader2 } from "lucide-react";
 import { Movie } from "@/lib/models";
 import countryData from '@/assets/countrycodes.json';
 import genresData from '@/assets/genres.json';
-import * as Sentry from "@sentry/react";
 import {
   filterByWatchlist,
   filterBySeenStatus,
@@ -20,16 +19,15 @@ import {
 } from "@/lib/filters";
 
 export const MovieGrid = () => {
-  const { movies, loading, loadMoreMovies, loadMoviesForCountry, fetchMovieDetails } = useMovies();
+  const { movies, loading, loadMoreMovies, loadMoviesForCountry } = useMovies();
+  const navigate = useNavigate();
   const observerRef = useRef<HTMLDivElement>(null);
-  const [selectedMovie, setSelectedMovie] = useState<Movie>(null);
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [seenFilter, setSeenFilter] = useState<'all' | 'seen' | 'unseen'>('all');
   const [watchlistFilter, setWatchlistFilter] = useState<string>('all');
   const [genreFilter, setGenreFilter] = useState<string>('all');
   const [seenMovies, setSeenMovies] = useState<Movie[]>([]);
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
-  const [loadingMovieDetails, setLoadingMovieDetails] = useState(false);
   // Lazy initializer — Date.now() must not be called during render.
   const [seed] = useState<number>(() => Date.now());
   
@@ -111,27 +109,8 @@ export const MovieGrid = () => {
     return filtered;
   }, [movies, seenFilter, seenMovies, watchlistFilter, watchlist]);
 
-  const handleMovieSelect = async (movieId: number) => {
-    setLoadingMovieDetails(true);
-    try {
-      const details: Movie = await fetchMovieDetails(movieId);
-      setSelectedMovie(details);
-    } catch (error) {
-      Sentry.captureException(error);
-      console.error("Error fetching movie details:", error);
-      setSelectedMovie(null);
-    } finally {
-      setLoadingMovieDetails(false);
-    }
-  };
-
-  const handleModalNavigation = (direction: 'prev' | 'next') => {
-    const currentIndex = filteredMovies.findIndex(m => m.id === selectedMovie?.id);
-    if (direction === 'prev' && currentIndex > 0) {
-      setSelectedMovie(filteredMovies[currentIndex - 1]);
-    } else if (direction === 'next' && currentIndex < filteredMovies.length - 1) {
-      setSelectedMovie(filteredMovies[currentIndex + 1]);
-    }
+  const handleMovieSelect = (movieId: number) => {
+    navigate(`/movie/${movieId}`);
   };
 
   const handleCountrySelect = useCallback((country: string | null) => {
@@ -242,16 +221,6 @@ export const MovieGrid = () => {
 
         {/* Intersection observer target */}
         <div ref={observerRef} className="h-20" />
-
-        <MovieDetailModal 
-          movie={selectedMovie}
-          isOpen={!!selectedMovie || loadingMovieDetails}
-          onClose={() => setSelectedMovie(null)}
-          movies={filteredMovies}
-          currentIndex={filteredMovies.findIndex(m => m.id === selectedMovie?.id)}
-          onNavigate={handleModalNavigation}
-          isLoading={loadingMovieDetails}
-        />
       </div>
     </section>
   );

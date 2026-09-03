@@ -68,7 +68,7 @@ test.describe('Movie Search', () => {
     await expect(cards.first()).toBeVisible();
   });
 
-  test('clicking a search suggestion and opening movie detail', async ({ page }) => {
+  test('clicking a search suggestion navigates to the movie detail page', async ({ page }) => {
     await page.goto('/');
     await page.locator('.grid.grid-cols-2 > div').first().waitFor({ state: 'visible', timeout: 60000 });
 
@@ -80,16 +80,11 @@ test.describe('Movie Search', () => {
     const suggestion = page.getByRole('option', { name: /godfather/i });
     await expect(suggestion).toBeVisible({ timeout: 30000 });
 
-    // Click the suggestion
+    // Clicking a suggestion navigates to the movie's dedicated /movie/:id route
     await suggestion.click();
+    await expect(page).toHaveURL(/\/movie\/\d+/, { timeout: 60000 });
 
-    // The search input should be cleared after selection
-    await expect(searchInput).toHaveValue('');
-
-    // If the movie is in the grid, a modal should open; if not, the grid stays.
-    // This is a best-effort assertion — the modal may or may not appear depending
-    // on whether the movie is already loaded in the visible grid.
-    // We just verify no crash and input is cleared.
-    await page.waitForTimeout(1000);
+    // The detail page renders an h1 with the movie title after details load.
+    await expect(page.locator('h1')).toBeVisible({ timeout: 60000 });
   });
 });

@@ -45,7 +45,10 @@ export const MovieDetail = ({ onClose }: MovieDetailProps) => {
 
   useEffect(() => {
     if (id) {
-      fetchMovieDetails(Number(id)).then(setMovie);
+      fetchMovieDetails(Number(id)).then(movie => {
+        setMovie(movie ?? null);
+        setIsLoading(false);
+      });
     }
   }, [id, fetchMovieDetails]);
 
@@ -67,11 +70,6 @@ export const MovieDetail = ({ onClose }: MovieDetailProps) => {
           },
           "description": movie.description,
           "genre": movie.genres.join(', '),
-          "aggregateRating": {
-            "@type": "AggregateRating",
-            "ratingValue": movie.rating,
-            "reviewCount": "100"
-          },
           "actor": movie.cast?.map(name => ({
             "@type": "Person",
             "name": name

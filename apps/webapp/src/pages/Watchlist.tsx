@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { MovieCard } from "@/components/MovieCard";
 import { useSEO } from "@/hooks/useSEO";
-import { MovieDetailModal } from "@/components/MovieDetailModal";
 import { Movie } from "@/lib/models";
 import { CountryFilter } from "@/components/CountryFilter";
 import { Separator } from "@/components/ui/separator";
@@ -25,7 +25,7 @@ const Watchlist = () => {
   });
 
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
-  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
+  const navigate = useNavigate();
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [seenFilter, setSeenFilter] = useState<'all' | 'seen' | 'unseen'>('all');
   const [tagFilter, setTagFilter] = useState<string>('all');
@@ -133,17 +133,7 @@ const Watchlist = () => {
   }, [watchlist, selectedCountry, tagFilter, seenFilter, seenMovies, searchQuery, genreFilter]);
 
   const handleMovieSelect = (movie: Movie) => {
-    setSelectedMovie(movie);
-  };
-
-  const handleModalNavigation = (direction: 'prev' | 'next') => {
-    const movies = filteredMovies.map(item => item.movie);
-    const currentIndex = movies.findIndex(m => m.id === selectedMovie?.id);
-    if (direction === 'prev' && currentIndex > 0) {
-      setSelectedMovie(movies[currentIndex - 1]);
-    } else if (direction === 'next' && currentIndex < movies.length - 1) {
-      setSelectedMovie(movies[currentIndex + 1]);
-    }
+    navigate(`/movie/${movie.id}`);
   };
 
   const handleCountrySelect = (country: string | null) => {
@@ -286,15 +276,6 @@ const Watchlist = () => {
               </div>
             </>
           )}
-
-          <MovieDetailModal 
-            movie={selectedMovie}
-            isOpen={!!selectedMovie}
-            onClose={() => setSelectedMovie(null)}
-            movies={filteredMovies.map(item => item.movie)}
-            currentIndex={filteredMovies.findIndex(item => item.movie.id === selectedMovie?.id)}
-            onNavigate={handleModalNavigation}
-          />
         </div>
       </section>
     </main>

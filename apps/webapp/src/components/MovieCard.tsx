@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Star, MapPin } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Movie } from "@/lib/models";
-import { useSEO } from "@/hooks/useSEO";
 
 interface MovieCardProps {
   movie: Movie;
@@ -12,31 +11,6 @@ interface MovieCardProps {
 export const MovieCard = ({ movie, onClick }: MovieCardProps) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
-
-  useSEO({
-    title: movie.title,
-    description: movie.description,
-    ogType: 'video',
-    ogImage: movie.poster,
-    structuredData: {
-      "@context": "https://schema.org",
-      "@type": "Movie",
-      "name": movie.title,
-      "datePublished": String(movie.year),
-      "director": {
-        "@type": "Person",
-        "name": movie.director
-      },
-      "countryOfOrigin": movie.country,
-      "aggregateRating": {
-        "@type": "AggregateRating",
-        "ratingValue": String(movie.rating),
-        "bestRating": "10",
-        "worstRating": "1"
-      },
-      "genre": movie.genres?.join(", ")
-    }
-  });
 
   return (
     <Card

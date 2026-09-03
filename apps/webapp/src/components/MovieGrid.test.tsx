@@ -1,8 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import { MovieGrid } from './MovieGrid';
 import type { Mock } from 'vitest';
+
+// ---------------------------------------------------------------------------
+// Router mock — overrides the global react-router-dom mock from setup.tsx so
+// this file can assert on the target of useNavigate navigation (the global
+// mock returns a no-op navigate). The real MemoryRouter's child rendering is
+// not needed by MovieGrid, a passthrough div suffices.
+// ---------------------------------------------------------------------------
+const mockNavigate = vi.fn();
+vi.mock('react-router-dom', () => ({
+  MemoryRouter: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  useNavigate: () => mockNavigate,
+  useLocation: () => ({ pathname: '/', search: '' }),
+}));
 
 // ---------------------------------------------------------------------------
 // Mock factories – declared before vi.mock so the hoisted factory captures
@@ -73,6 +87,14 @@ function setUseMovies(overrides: Record<string, unknown> = {}) {
   (useMovies as Mock).mockImplementation(() => ({ ...defaults, ...overrides }));
 }
 
+function renderGrid() {
+  return render(
+    <MemoryRouter>
+      <MovieGrid />
+    </MemoryRouter>,
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -86,7 +108,7 @@ describe('MovieGrid', () => {
   it('renders loading spinner when loading', () => {
     setUseMovies({ loading: true });
 
-    render(<MovieGrid />);
+    renderGrid();
 
     // The loading block renders a Loader2 icon alongside "Discovering more films…"
     expect(screen.getByText('Discovering more films...')).toBeInTheDocument();
@@ -101,7 +123,7 @@ describe('MovieGrid', () => {
   it('renders movies when loaded', () => {
     setUseMovies({ movies: mockMovies });
 
-    render(<MovieGrid />);
+    renderGrid();
 
     // Each MovieCard renders its title inside an <h3>.
     expect(screen.getByText('Test Movie 1')).toBeInTheDocument();
@@ -122,7 +144,7 @@ describe('MovieGrid', () => {
   it('renders movie cards as direct div children of the grid (E2E selector .grid.grid-cols-2 > div)', () => {
     setUseMovies({ movies: mockMovies });
 
-    const { container } = render(<MovieGrid />);
+    const { container } = renderGrid();
 
     const grid = container.querySelector('.grid.grid-cols-2');
     expect(grid).not.toBeNull();
@@ -132,7 +154,7 @@ describe('MovieGrid', () => {
 
   // ── 3. loadMoreMovies called on mount ──────────────────────────────────
   it('calls loadMoreMovies on mount', () => {
-    render(<MovieGrid />);
+    renderGrid();
 
     // The initial load happens in the [genreFilter, selectedCountry] effect,
     // which fires on mount with the default values:
@@ -153,7 +175,7 @@ describe('MovieGrid', () => {
 
   // ── 4. Country selection triggers loadMoviesForCountry ─────────────────
   it('country selection triggers loadMoviesForCountry', async () => {
-    render(<MovieGrid />);
+    renderGrid();
 
     // The country dropdown uses a Radix Select with role="combobox".
     const countryTrigger = screen.getByRole('combobox');
@@ -177,7 +199,7 @@ describe('MovieGrid', () => {
     localStorage.setItem('seenMovies', JSON.stringify([mockMovie1]));
     setUseMovies({ movies: mockMovies });
 
-    render(<MovieGrid />);
+    renderGrid();
 
     // On mount the component loads seenMovies from localStorage, then re-renders.
     // Wait for the effect to settle and both movies to show (seenFilter = 'all').
@@ -208,24 +230,26 @@ describe('MovieGrid', () => {
     });
   });
 
-  // ── 6. Click movie opens detail modal ──────────────────────────────────
-  it('opens movie detail modal on click', async () => {
-    mockFetchMovieDetails.mockResolvedValue(mockMovie1);
+  // ── 6. Click movie navigates to its detail route ───────────────────────
+  it('navigates to the movie detail route on card click', async () => {
     setUseMovies({ movies: mockMovies });
 
-    render(<MovieGrid />);
+    renderGrid();
 
     // MovieCard renders the title inside a Card whose onClick calls
-    // handleMovieSelect(movie.id).  Click the title to trigger it.
+    // handleMovieSelect(movie.id), which should navigate to /movie/:id
+    // rather than opening a modal.  Click the title to trigger it.
     fireEvent.click(screen.getByText('Test Movie 1'));
 
-    // handleMovieSelect calls fetchMovieDetails(1)
-    expect(mockFetchMovieDetails).toHaveBeenCalledWith(1);
+    expect(mockNavigate).toHaveBeenCalledWith('/movie/1');
+
+    // A modal must NOT be opened (detail is now a routed page).
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
   });
 
   // ── 7. Empty state ─────────────────────────────────────────────────────
   it('shows empty state when no movies match filter', async () => {
-    render(<MovieGrid />);
+    renderGrid();
 
     // Select a country so the condition fires:
     //   filteredMovies.length === 0 && selectedCountry && !loading
@@ -243,40 +267,15 @@ describe('MovieGrid', () => {
     ).toBeInTheDocument();
   });
 
-  // ── (Bonus) Modal navigation through filtered list ─────────────────────
-  it('navigates between movies in the detail modal', async () => {
-    // Provide two movies and resolve detail fetching.
-    mockFetchMovieDetails.mockResolvedValue(mockMovie1);
+  // ── (Bonus) Movie search suggestion navigates to detail route ──────────
+  it('navigates to the movie detail route when a search suggestion is selected', async () => {
     setUseMovies({ movies: mockMovies });
 
-    render(<MovieGrid />);
+    renderGrid();
 
-    // Open the modal for the first movie.
+    // MovieSearch calls onMovieSelect(id) → handleMovieSelect → navigate.
     fireEvent.click(screen.getByText('Test Movie 1'));
-    await waitFor(() => {
-      expect(mockFetchMovieDetails).toHaveBeenCalledWith(1);
-    });
 
-    // The modal is now open (Radix Dialog in a portal).  With 2 movies and
-    // current index 0, a "next" button (ChevronRight icon) should be present.
-    // Radix renders the navigation buttons without accessible labels, so we
-    // locate them via their SVG icons.
-    const modal = document.querySelector('[role="dialog"]');
-    expect(modal).toBeInTheDocument();
-
-    // The next-button icon (ChevronRight) should be in the dialog.
-    const nextButton = modal?.querySelector('.lucide-chevron-right')?.closest('button');
-    expect(nextButton).toBeInTheDocument();
-
-    // Click next to navigate to the second movie.
-    if (nextButton) fireEvent.click(nextButton);
-
-    // After navigation selectedMovie switches to mockMovie2.
-    // The dialog now renders the second movie's title as a DialogTitle.
-    // The grid also shows the card – verify the dialog-specific h2 is present.
-    await waitFor(() => {
-      const dialogTitle = modal?.querySelector('h2');
-      expect(dialogTitle).toHaveTextContent('Test Movie 2');
-    });
+    expect(mockNavigate).toHaveBeenCalledWith('/movie/1');
   });
 });
