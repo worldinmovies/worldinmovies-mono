@@ -1,8 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import Watchlist from '@/pages/Watchlist';
 import { Movie } from '@/lib/models';
+
+// Override the global react-router-dom mock from setup.tsx (which returns a
+// no-op navigate) so this file can assert where movie selection navigates to.
+const mockNavigate = vi.fn();
+vi.mock('react-router-dom', () => ({
+  useNavigate: () => mockNavigate,
+  useLocation: () => ({ pathname: '/', search: '' }),
+}));
 
 const mockMovies: Movie[] = [
   { id: 1, title: 'Akira', year: 1988, country: 'Japan', countryCode: 'jp', countryFlag: '', director: 'Otomo', rating: 8.5, genres: ['Animation'], poster: '', description: '' },
@@ -101,11 +109,15 @@ describe('Watchlist page', () => {
     expect(document.title).toBe('My Watchlist - World Cinema | World in Movies');
   });
 
-  it('should render MovieDetailModal when a movie is selected', () => {
+  it('navigates to the movie detail route when a card is selected', () => {
     renderWithData(mockWatchlistData);
 
-    // Click on a movie card to select it
+    // Click a movie card to select it.
     expect(screen.getByText('Akira')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Akira'));
+
+    // Selecting a movie navigates to its dedicated /movie/:id route.
+    expect(mockNavigate).toHaveBeenCalledWith('/movie/1');
   });
 
   it('should handle empty watchlist gracefully', () => {
@@ -114,19 +126,18 @@ describe('Watchlist page', () => {
     expect(screen.getByText('Your watchlist is empty')).toBeInTheDocument();
   });
 
-  it('should dispatch custom events when watchlist changes', () => {
-    const handler = vi.fn();
-    window.addEventListener('watchlistChanged', handler as any);
-
+  it('updates the watchlist when a watchlistChanged event is dispatched', () => {
     setupLocalStorage(mockWatchlistData);
     render(<Watchlist />);
 
-    // The useEffect fires on mount and dispatches watchlistChanged
-    // With localStorage pre-populated, it loads data and (if the component
-    // dispatches on initial load) calls the handler
-    expect(handler).toHaveBeenCalled();
+    // The component listens for externally-dispatched watchlistChanged events
+    // (raised e.g. when a movie is toggled on another page).
+    act(() => {
+      window.dispatchEvent(new CustomEvent('watchlistChanged', { detail: [] }));
+    });
 
-    window.removeEventListener('watchlistChanged', handler as any);
+    // Emptying the watchlist via the event clears the rendered list.
+    expect(screen.getByText('Your watchlist is empty')).toBeInTheDocument();
   });
 
   it('should show movie count when watchlist has items', () => {

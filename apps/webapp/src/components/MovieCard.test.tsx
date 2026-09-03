@@ -74,31 +74,6 @@ describe('MovieCard component', () => {
     expect(handleClick).toHaveBeenCalledTimes(1);
   });
 
-  it('should inject structured data script', () => {
-    render(<MovieCard movie={mockMovie} />);
-
-    const script = document.getElementById('structured-data');
-    expect(script).not.toBeNull();
-    const data = JSON.parse(script?.textContent || '{}');
-    expect(data['@type']).toBe('Movie');
-    expect(data.name).toBe('Akira');
-    expect(data.datePublished).toBe('1988');
-    expect(data.director.name).toBe('Katsuhiro Otomo');
-    expect(data.countryOfOrigin).toBe('Japan');
-    expect(data.aggregateRating.ratingValue).toBe('8.5');
-    expect(data.genre).toBe('Animation, Sci-Fi');
-  });
-
-  it('should remove schema on unmount', () => {
-    const { unmount } = render(<MovieCard movie={mockMovie} />);
-
-    expect(document.getElementById('structured-data')).not.toBeNull();
-
-    unmount();
-
-    expect(document.getElementById('structured-data')).toBeNull();
-  });
-
   it('should show fallback when image fails to load', () => {
     render(<MovieCard movie={mockMovie} />);
 

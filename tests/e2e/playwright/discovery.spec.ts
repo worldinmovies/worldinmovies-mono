@@ -72,21 +72,20 @@ test.describe('Movie Discovery', () => {
     await expect(cards.first()).toBeVisible({ timeout: 60000 });
   });
 
-  test('clicking a movie card opens and closes the detail modal', async ({ page }) => {
+  test('clicking a movie card navigates to the movie detail page', async ({ page }) => {
     await page.goto('/');
 
     const cards = page.locator('.grid.grid-cols-2 > div');
     await expect(cards.first()).toBeVisible({ timeout: 60000 });
 
+    // Record the target movie id from the card's click-navigation.
     await cards.first().click();
 
-    // fetchMovieDetails shows a loading spinner then the movie content.
-    // Wait for the DialogTitle (h2) to render after loading completes.
-    const dialog = page.getByRole('dialog');
-    await expect(dialog).toBeVisible({ timeout: 60000 });
-    await expect(dialog.locator('h2').first()).toBeVisible({ timeout: 60000 });
+    // Selecting a movie now navigates to its dedicated /movie/:id route
+    // (a real, indexable URL) instead of opening a modal.
+    await expect(page).toHaveURL(/\/movie\/\d+/, { timeout: 60000 });
 
-    await page.keyboard.press('Escape');
-    await expect(dialog).not.toBeVisible();
+    // The detail page renders an h1 with the movie title after details load.
+    await expect(page.locator('h1')).toBeVisible({ timeout: 60000 });
   });
 });

@@ -1,0 +1,422 @@
+[
+  {
+    "_id": 1,
+    "imdb_id": "tt0094675",
+    "title": "Ariel",
+    "original_title": "Ariel",
+    "overview": "Taisto Kasurinen is a Finnish coal miner whose father has just committed suicide.",
+    "poster_path": "/ojDg0PGvs6R9xYFodRct2kdI6wC.jpg",
+    "vote_average": 7.2,
+    "vote_count": 200,
+    "weighted_rating": 7.0,
+    "estimated_country": "FI",
+    "year": 1988,
+    "director": "Aki Kaurismäki",
+    "production_companies": [
+      {
+        "id": 1,
+        "name": "Authentik Pictures",
+        "origin_country": "FI"
+      }
+    ],
+    "credits": {
+      "cast": [
+        {
+          "name": "Turo Pajala",
+          "character": "",
+          "order": 0
+        },
+        {
+          "name": "Susanna Haavisto",
+          "character": "",
+          "order": 1
+        },
+        {
+          "name": "Matti Pellonpää",
+          "character": "",
+          "order": 2
+        }
+      ],
+      "crew": []
+    },
+    "fetched": true
+  },
+  {
+    "_id": 2,
+    "imdb_id": "tt0047478",
+    "title": "Seven Samurai",
+    "original_title": "七人の侍",
+    "overview": "A poor village under attack by bandits recruits seven unemployed samurai to help them defend themselves.",
+    "poster_path": "/8OKmW5MkG1bPV2K2nLxYq0MFsI.jpg",
+    "vote_average": 8.5,
+    "vote_count": 3400,
+    "weighted_rating": 8.4,
+    "estimated_country": "JP",
+    "year": 1954,
+    "director": "Akira Kurosawa",
+    "production_companies": [
+      {
+        "id": 2,
+        "name": "Authentik Pictures",
+        "origin_country": "JP"
+      }
+    ],
+    "credits": {
+      "cast": [
+        {
+          "name": "Takashi Shimura",
+          "character": "",
+          "order": 0
+        },
+        {
+          "name": "Toshirō Mifune",
+          "character": "",
+          "order": 1
+        },
+        {
+          "name": "Yoshio Inaba",
+          "character": "",
+          "order": 2
+        }
+      ],
+      "crew": []
+    },
+    "fetched": true
+  },
+  {
+    "_id": 3,
+    "imdb_id": "tt0050976",
+    "title": "The Seventh Seal",
+    "original_title": "Det sjunde inseglet",
+    "overview": "A knight returning from the Crusades plays chess with Death.",
+    "poster_path": "/uC6eUhF0W4Ejkp2aTSbFqdeDJkz.jpg",
+    "vote_average": 8.1,
+    "vote_count": 2000,
+    "weighted_rating": 8.0,
+    "estimated_country": "SE",
+    "year": 1957,
+    "director": "Ingmar Bergman",
+    "production_companies": [
+      {
+        "id": 3,
+        "name": "Authentik Pictures",
+        "origin_country": "SE"
+      }
+    ],
+    "credits": {
+      "cast": [
+        {
+          "name": "Max von Sydow",
+          "character": "",
+          "order": 0
+        },
+        {
+          "name": "Gunnar Björnstrand",
+          "character": "",
+          "order": 1
+        },
+        {
+          "name": "Bengt Ekerot",
+          "character": "",
+          "order": 2
+        }
+      ],
+      "crew": []
+    },
+    "fetched": true
+  },
+  {
+    "_id": 4,
+    "imdb_id": "tt0211915",
+    "title": "Amélie",
+    "original_title": "Le Fabuleux Destin d'Amélie Poulain",
+    "overview": "Amélie is an innocent and naive girl in Paris with her own sense of justice.",
+    "poster_path": "/f0uorE7K7kkHnSB3W1GHQpYpFky.jpg",
+    "vote_average": 8.2,
+    "vote_count": 3300,
+    "weighted_rating": 8.1,
+    "estimated_country": "FR",
+    "year": 2001,
+    "director": "Jean-Pierre Jeunet",
+    "production_companies": [
+      {
+        "id": 4,
+        "name": "Authentik Pictures",
+        "origin_country": "FR"
+      }
+    ],
+    "credits": {
+      "cast": [
+        {
+          "name": "Audrey Tautou",
+          "character": "",
+          "order": 0
+        },
+        {
+          "name": "Mathieu Kassovitz",
+          "character": "",
+          "order": 1
+        },
+        {
+          "name": "Rufus",
+          "character": "",
+          "order": 2
+        }
+      ],
+      "crew": []
+    },
+    "fetched": true
+  },
+  {
+    "_id": 5,
+    "imdb_id": "tt0095765",
+    "title": "Cinema Paradiso",
+    "original_title": "Nuovo Cinema Paradiso",
+    "overview": "A filmmaker recalls his childhood when falling in love with the pictures at the local cinema.",
+    "poster_path": "/8SRUfRUi6x4im3sV0r3NQHpADpO.jpg",
+    "vote_average": 8.5,
+    "vote_count": 2800,
+    "weighted_rating": 8.3,
+    "estimated_country": "IT",
+    "year": 1988,
+    "director": "Giuseppe Tornatore",
+    "production_companies": [
+      {
+        "id": 5,
+        "name": "Authentik Pictures",
+        "origin_country": "IT"
+      }
+    ],
+    "credits": {
+      "cast": [
+        {
+          "name": "Philippe Noiret",
+          "character": "",
+          "order": 0
+        },
+        {
+          "name": "Salvatore Cascio",
+          "character": "",
+          "order": 1
+        },
+        {
+          "name": "Marco Leonardi",
+          "character": "",
+          "order": 2
+        }
+      ],
+      "crew": []
+    },
+    "fetched": true
+  },
+  {
+    "_id": 6,
+    "imdb_id": "tt6751668",
+    "title": "Parasite",
+    "original_title": "기생충",
+    "overview": "Greed and class discrimination threaten the newly formed symbiotic relationship between the wealthy Park family and the destitute Kim clan.",
+    "poster_path": "/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg",
+    "vote_average": 8.5,
+    "vote_count": 7000,
+    "weighted_rating": 8.5,
+    "estimated_country": "KR",
+    "year": 2019,
+    "director": "Bong Joon-ho",
+    "production_companies": [
+      {
+        "id": 6,
+        "name": "Authentik Pictures",
+        "origin_country": "KR"
+      }
+    ],
+    "credits": {
+      "cast": [
+        {
+          "name": "Song Kang-ho",
+          "character": "",
+          "order": 0
+        },
+        {
+          "name": "Lee Sun-kyun",
+          "character": "",
+          "order": 1
+        },
+        {
+          "name": "Cho Yeo-jeong",
+          "character": "",
+          "order": 2
+        }
+      ],
+      "crew": []
+    },
+    "fetched": true
+  },
+  {
+    "_id": 7,
+    "imdb_id": "tt0068646",
+    "title": "The Godfather",
+    "original_title": "The Godfather",
+    "overview": "The aging patriarch of an organized crime dynasty transfers control to his reluctant son.",
+    "poster_path": "/3bhkrj58Vtu7enYsRolD1fZdja1.jpg",
+    "vote_average": 8.7,
+    "vote_count": 5000,
+    "weighted_rating": 8.6,
+    "estimated_country": "US",
+    "year": 1972,
+    "director": "Francis Ford Coppola",
+    "production_companies": [
+      {
+        "id": 7,
+        "name": "Authentik Pictures",
+        "origin_country": "US"
+      }
+    ],
+    "credits": {
+      "cast": [
+        {
+          "name": "Marlon Brando",
+          "character": "",
+          "order": 0
+        },
+        {
+          "name": "Al Pacino",
+          "character": "",
+          "order": 1
+        },
+        {
+          "name": "James Caan",
+          "character": "",
+          "order": 2
+        }
+      ],
+      "crew": []
+    },
+    "fetched": true
+  },
+  {
+    "_id": 8,
+    "imdb_id": "tt0118694",
+    "title": "In the Mood for Love",
+    "original_title": "花樣年華",
+    "overview": "Two neighbors develop a close relationship, suspecting their spouses are having an affair.",
+    "poster_path": "/pDp4WzGKSP1FDP4CJ7fWqXcfGL8.jpg",
+    "vote_average": 8.1,
+    "vote_count": 1800,
+    "weighted_rating": 8.0,
+    "estimated_country": "HK",
+    "year": 2000,
+    "director": "Wong Kar-wai",
+    "production_companies": [
+      {
+        "id": 8,
+        "name": "Authentik Pictures",
+        "origin_country": "HK"
+      }
+    ],
+    "credits": {
+      "cast": [
+        {
+          "name": "Tony Leung Chiu-wai",
+          "character": "",
+          "order": 0
+        },
+        {
+          "name": "Maggie Cheung",
+          "character": "",
+          "order": 1
+        },
+        {
+          "name": "Rebecca Pan",
+          "character": "",
+          "order": 2
+        }
+      ],
+      "crew": []
+    },
+    "fetched": true
+  },
+  {
+    "_id": 9,
+    "imdb_id": "tt0364569",
+    "title": "Oldboy",
+    "original_title": "올드보이",
+    "overview": "After being kidnapped and imprisoned for fifteen years, Oh Dae-Su is released, only to find that he must find his captor in five days.",
+    "poster_path": "/p690sQoYmdsP5XGhdOU0x7Y9KvT.jpg",
+    "vote_average": 8.3,
+    "vote_count": 3200,
+    "weighted_rating": 8.2,
+    "estimated_country": "KR",
+    "year": 2003,
+    "director": "Park Chan-wook",
+    "production_companies": [
+      {
+        "id": 9,
+        "name": "Authentik Pictures",
+        "origin_country": "KR"
+      }
+    ],
+    "credits": {
+      "cast": [
+        {
+          "name": "Choi Min-sik",
+          "character": "",
+          "order": 0
+        },
+        {
+          "name": "Yoo Ji-tae",
+          "character": "",
+          "order": 1
+        },
+        {
+          "name": "Kang Hye-jeong",
+          "character": "",
+          "order": 2
+        }
+      ],
+      "crew": []
+    },
+    "fetched": true
+  },
+  {
+    "_id": 10,
+    "imdb_id": "tt0083922",
+    "title": "Fanny and Alexander",
+    "original_title": "Fanny och Alexander",
+    "overview": "Two young Swedish children experience the many comedies and tragedies of their family.",
+    "poster_path": "/o5VulnNSSBl4JRbXeMhRBIeE31k.jpg",
+    "vote_average": 8.0,
+    "vote_count": 1200,
+    "weighted_rating": 7.9,
+    "estimated_country": "SE",
+    "year": 1982,
+    "director": "Ingmar Bergman",
+    "production_companies": [
+      {
+        "id": 10,
+        "name": "Authentik Pictures",
+        "origin_country": "SE"
+      }
+    ],
+    "credits": {
+      "cast": [
+        {
+          "name": "Bertil Guve",
+          "character": "",
+          "order": 0
+        },
+        {
+          "name": "Pernilla Allwin",
+          "character": "",
+          "order": 1
+        },
+        {
+          "name": "Ewa Fröling",
+          "character": "",
+          "order": 2
+        }
+      ],
+      "crew": []
+    },
+    "fetched": true
+  }
+]
