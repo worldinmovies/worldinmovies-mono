@@ -59,3 +59,15 @@ secrets:
   TMDB_API_KEY: "REPLACE_ME"
   SENTRY_DSN: "REPLACE_ME"
   ADMIN_API_KEY: "REPLACE_ME"
+
+# -- Scheduled CronJob for Meilisearch reindexing.
+# Runs `python manage.py index_meilisearch`, which clears the index,
+# updates settings, and dispatches index_movies Celery chunks to the
+# worker. Requires the tmdb-worker to be running.
+cronJob:
+  enabled: false
+  schedule: "0 3 * * 2"
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi

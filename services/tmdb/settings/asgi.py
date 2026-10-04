@@ -11,7 +11,7 @@ from apps.app.websocket import Consumer
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings.settings")
 
 websocket_urlpatterns = [
-    re_path('^ws*', Consumer.as_asgi()),
+    re_path('^ws/?$', Consumer.as_asgi()),
 ]
 
 application = ProtocolTypeRouter(

@@ -69,6 +69,13 @@ tmdb:
     DJANGO_SECRET_KEY: "REPLACE_ME"
     TMDB_API_KEY: "REPLACE_ME"
     SENTRY_DSN: "REPLACE_ME"
+  cronJob:
+    enabled: false
+    schedule: "0 3 * * 2"
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
 
 tmdb-worker:
   mongodb:
