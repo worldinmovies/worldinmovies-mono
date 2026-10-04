@@ -8,6 +8,15 @@ map $http_upgrade $connection_upgrade { # WebSocket support
  '' '';
 }
 
+# Conditional X-API-Key injection for admin import paths.
+# The $ADMIN_API_KEY variable is populated from the container environment
+# via the nginx `env` directive (see nginx.conf / Dockerfile).
+# Non-admin paths get empty value → nginx omits the header entirely.
+map $request_uri $admin_api_key {
+    ~^/tmdb/(import|index|dump|redo)/   $ADMIN_API_KEY;
+    default                             "";
+}
+
 server {
     listen 80;
 
@@ -44,6 +53,7 @@ server {
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto  $scheme;
     proxy_set_header Host $host;
+    proxy_set_header X-API-Key $admin_api_key;
     # we don't want nginx trying to do something clever with
     # redirects, we set the Host: header above already.
     proxy_redirect off;

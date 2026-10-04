@@ -122,3 +122,4 @@ webapp:
   secrets:
     SENTRY_DSN: "REPLACE_ME"
     ADMIN_PASSWORD: "REPLACE_ME"
+    ADMIN_API_KEY: "REPLACE_ME"

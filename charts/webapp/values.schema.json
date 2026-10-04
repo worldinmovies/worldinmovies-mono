@@ -11,6 +11,9 @@
         },
         "ADMIN_PASSWORD": {
           "type": "string"
+        },
+        "ADMIN_API_KEY": {
+          "type": "string"
         }
       }
     }
