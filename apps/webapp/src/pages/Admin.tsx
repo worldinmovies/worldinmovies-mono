@@ -56,14 +56,20 @@ const Admin = () => {
     toast.success("Logs cleared successfully");
   };
 
-  const triggerBackend = (path: string) => {
-    fetch(`${getBackendUrl()}${path}`)
-      .catch(error => toast.error(`Could not trigger ${path}: error=${JSON.stringify(error)}`))
-      .then((response: Response) => {
-        const data: string = response.json() ? JSON.stringify(response.json()) : JSON.stringify(response.body);
-        setLogs(prev => [...prev.slice(-99), data])
-      })
-  }
+  const triggerBackend = async (path: string) => {
+    try {
+      const response = await fetch(`${getBackendUrl()}${path}`);
+      if (!response.ok) {
+        toast.error(`Could not trigger ${path}: HTTP ${response.status}`);
+        setLogs(prev => [...prev.slice(-99), `Failed to trigger ${path}: HTTP ${response.status}`]);
+        return;
+      }
+      const data = await response.json();
+      setLogs(prev => [...prev.slice(-99), JSON.stringify(data)]);
+    } catch (error) {
+      toast.error(`Could not trigger ${path}: error=${JSON.stringify(error)}`);
+    }
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">

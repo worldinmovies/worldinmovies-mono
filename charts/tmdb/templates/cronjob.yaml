@@ -1,0 +1,47 @@
+{{- if .Values.cronJob.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ printf "%s-index-meilisearch" .Release.Name }}
+  labels:
+    app: {{ .Release.Name }}
+    name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  schedule: {{ .Values.cronJob.schedule | quote }}
+  startingDeadlineSeconds: 300
+  failedJobsHistoryLimit: 3
+  successfulJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 3
+      template:
+        metadata:
+          labels:
+            name: {{ .Release.Name }}
+        spec:
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+          restartPolicy: OnFailure
+          containers:
+            - name: {{ printf "%s-index-meilisearch" .Release.Name }}
+              image: {{ printf "%s:%s" .Values.image.repository .Values.image.tag }}
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              command:
+                - python
+                - manage.py
+                - index_meilisearch
+              env:
+                {{- toYaml .Values.envs | nindent 16 }}
+                - name: MONGO_URL
+                  value: {{ if .Values.mongodb.enabled }}{{ printf "%s-mongodb.%s.svc.cluster.local" .Release.Name .Release.Namespace }}{{ else }}{{ .Values.external.mongoURL }}{{ end }}
+                - name: RABBITMQ_URL
+                  value: {{ if .Values.rabbitmq.enabled }}{{ printf "%s-rabbitmq.%s.svc.cluster.local" .Release.Name .Release.Namespace }}{{ else }}{{ .Values.external.rabbitmqURL }}{{ end }}
+              envFrom:
+                - secretRef:
+                    name: {{ printf "%s-env-secrets" .Release.Name }}
+              resources:
+                {{ toYaml .Values.cronJob.resources | nindent 16 }}
+{{- end }}

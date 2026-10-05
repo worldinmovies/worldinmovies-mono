@@ -20,6 +20,34 @@
         }
       },
       "required": ["DJANGO_SECRET_KEY", "TMDB_API_KEY", "ADMIN_API_KEY"]
+    },
+    "cronJob": {
+      "type": "object",
+      "description": "Scheduled CronJob for Meilisearch reindexing (requires the tmdb-worker to be running).",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "schedule": {
+          "type": "string"
+        },
+        "resources": {
+          "type": "object",
+          "properties": {
+            "requests": {
+              "type": "object",
+              "properties": {
+                "cpu": {
+                  "type": "string"
+                },
+                "memory": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }

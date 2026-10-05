@@ -2,8 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { toast } from "sonner";
 import { getBackendUrl } from "@/lib/config";
 
-const ws_scheme = window.location.protocol === "https:" ? "wss" : "ws";
-
 export const useWebSocket = (
   url?: string,
   options?: { retryDelay?: number },
@@ -24,15 +22,12 @@ export const useWebSocket = (
       return () => clearInterval(interval);
     }
 
-    const websocketUrl = url || `${getBackendUrl().replace('http', 'ws')}/ws`;
-    
+    const websocketUrl = url || getBackendUrl().replace(/^https?:/, 'ws:').replace(/\/+$/, '') + '/ws';
+
     const connect = () => {
       try {
-        const matcher = getBackendUrl().match(/.*(:\d+).*/);
-        const value = matcher !== null ? matcher[1] : getBackendUrl();
-        console.log(`Connecting to: ${value} based on ${value}`)
-        ws.current = new WebSocket(`${ws_scheme}://${window.location.hostname}${value}/ws`);
-        //ws.current = new WebSocket(websocketUrl);
+        console.log(`Connecting to: ${websocketUrl}`)
+        ws.current = new WebSocket(websocketUrl);
         
         ws.current.onopen = () => {
           setConnected(true);

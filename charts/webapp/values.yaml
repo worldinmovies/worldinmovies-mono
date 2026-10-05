@@ -37,3 +37,8 @@ env:
 secrets:
   SENTRY_DSN: "REPLACE_ME"
   ADMIN_PASSWORD: "REPLACE_ME"
+  # ADMIN_API_KEY is the shared secret the tmdb backend expects in the
+  # X-API-Key header on admin import endpoints. Injected by webapp nginx
+  # proxy ONLY for /tmdb/(import|index|dump|redo)/ paths. Server-side only;
+  # never exposed to the webapp JS bundle. Must match tmdb chart's ADMIN_API_KEY.
+  ADMIN_API_KEY: "REPLACE_ME"

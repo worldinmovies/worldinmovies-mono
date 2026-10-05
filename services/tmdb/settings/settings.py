@@ -72,7 +72,7 @@ CRONJOBS = [
     ('0 0 * * 1', 'apps.tmdb.tmdb_importer.populate_discovery_movies', '>> /tmp/scheduled_job.log'),
     # IMDB
     ('0 1 * * *', 'apps.imdb.imdb_importer.import_imdb_ratings', '>> /tmp/scheduled_job.log'),
-    ('0 0 * * 1', 'apps.imdb.imdb_importer.import_imdb_alt_titles', '>> /tmp/scheduled_job.log'),
+    ('0 0 * * 2', 'apps.imdb.imdb_importer.import_imdb_alt_titles', '>> /tmp/scheduled_job.log'),
 ]
 STATIC_URL = '/static/'
 

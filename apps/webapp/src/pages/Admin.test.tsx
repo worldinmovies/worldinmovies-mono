@@ -1,6 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import Admin from '@/pages/Admin';
+import { toast } from 'sonner';
 import type { Mock } from 'vitest';
 
 // Mock hooks used by Admin
@@ -114,5 +115,65 @@ describe('Admin page', () => {
   it('shows log entry count', () => {
     render(<Admin />);
     expect(screen.getByText('(0 entries)')).toBeInTheDocument();
+  });
+
+  describe('triggerBackend', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('handles 401 Unauthorized without crashing and shows toast error', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        json: () => Promise.resolve({ error: 'Unauthorized' }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      render(<Admin />);
+      const button = screen.getByText('Import TMDB Base');
+      await act(async () => {
+        fireEvent.click(button);
+      });
+
+      expect(mockFetch).toHaveBeenCalledWith('/tmdb/import/base');
+      expect(vi.mocked(toast.error)).toHaveBeenCalledWith(
+        'Could not trigger /import/base: HTTP 401'
+      );
+    });
+
+    it('logs JSON data on success', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ status: 'ok' }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      render(<Admin />);
+      const button = screen.getByText('Import TMDB Base');
+      await act(async () => {
+        fireEvent.click(button);
+      });
+
+      expect(mockFetch).toHaveBeenCalledWith('/tmdb/import/base');
+      expect(screen.getByText(/"status":"ok"/)).toBeInTheDocument();
+    });
+
+    it('handles network errors without crashing and shows toast error', async () => {
+      const mockFetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+      vi.stubGlobal('fetch', mockFetch);
+
+      render(<Admin />);
+      const button = screen.getByText('Import TMDB Base');
+      await act(async () => {
+        fireEvent.click(button);
+      });
+
+      expect(mockFetch).toHaveBeenCalledWith('/tmdb/import/base');
+      expect(vi.mocked(toast.error)).toHaveBeenCalledWith(
+        expect.stringContaining('Could not trigger /import/base')
+      );
+    });
   });
 });
