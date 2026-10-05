@@ -23,6 +23,10 @@ spec:
         runAsUser: 1000
         runAsGroup: 1000
         fsGroup: 1000
+      {{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml .Values.imagePullSecrets | nindent 8 }}
+      {{- end }}
       initContainers:
         - name: copy-app
           image: {{ printf "%s:%s" .Values.image.repository .Values.image.tag }}
