@@ -4,7 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "build": "tsc && vite build --base=/",
+    "generate-sitemap": "node ../../scripts/generate-sitemap.js",
+    "build": "pnpm generate-sitemap && tsc && vite build --base=/",
     "build:android": "npm run build && npx cap sync android",
     "run:android": "npm run build && npx cap open android",
     "release:android": "npm run build && npx cap sync",

@@ -1,6 +1,7 @@
 {
   "name": "worldinmovies-mono",
   "private": true,
+  "type": "module",
   "scripts": {
     "test": "turbo run test",
     "test:frontend": "turbo run test --filter=@worldinmovies/webapp",
@@ -16,9 +17,10 @@
     "prepare": "husky"
   },
   "devDependencies": {
-    "turbo": "^2.5.0",
     "husky": "^9.0.0",
-    "lint-staged": "^17.0.7"
+    "lint-staged": "^17.0.7",
+    "mongodb": "^7.8.0",
+    "turbo": "^2.5.0"
   },
   "lint-staged": {
     "apps/webapp/src/**/*.{ts,tsx}": [

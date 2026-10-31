@@ -15,7 +15,7 @@ concurrency:
 jobs:
   backend-test:
     name: Backend tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # Must be x64: MongoDB 8.0 has kernel 6.19 incompatibility (SERVER-121912); ubuntu-latest migrated to arm64 on 2026-11-01
     defaults:
       run:
         working-directory: services/tmdb
@@ -61,7 +61,7 @@ jobs:
 
   frontend-test:
     name: Frontend tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # Keep x64 for consistency
     defaults:
       run:
         working-directory: apps/webapp
@@ -313,7 +313,7 @@ jobs:
   # the exact commit's code is tested; image publication (build-*/merge-*) stays main-only.
   integration-test:
     name: Integration tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # Must be x64: Playwright doesn't support debian-x64 on arm64 runners
     needs: [backend-test, frontend-test]
     timeout-minutes: 30
     steps:
