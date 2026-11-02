@@ -30,7 +30,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const PUBLIC_DIR = path.resolve(__dirname, "../apps/webapp/public");
+const PUBLIC_DIR = path.resolve(__dirname, "../public");
 
 const SITE_URL = (process.env.SITE_URL || "https://worldinmovies.com").replace(/\/+$/, "");
 const MONGO_PORT = Number(process.env.MONGO_PORT || "27017");
