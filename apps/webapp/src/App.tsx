@@ -17,6 +17,7 @@ const Watchlist = lazy(() => import("./pages/Watchlist"));
 const Import = lazy(() => import("./pages/import/Import"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const About = lazy(() => import("./pages/About"));
+const FAQ = lazy(() => import("./pages/FAQ"));
 const MovieDetail = lazy(() => import("./pages/MovieDetail"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -40,6 +41,7 @@ const App = () => {
                 <Route path="/import" element={<Import />} />
                 <Route path="/privacy" element={<Privacy />} />
                 <Route path="/about" element={<About />} />
+<Route path="/faq" element={<FAQ />} />
                 <Route path="/movie/:id" element={<MovieDetail />} />
                 <Route path="/trakt-import" element={<TraktImport />} />
                 <Route path="/trakt-callback" element={<TraktImport />} />
