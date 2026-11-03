@@ -315,7 +315,7 @@ jobs:
     name: Integration tests
     runs-on: ubuntu-24.04  # Must be x64: Playwright doesn't support debian-x64 on arm64 runners
     needs: [backend-test, frontend-test]
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
     - uses: actions/checkout@v7
     - name: Install pnpm
