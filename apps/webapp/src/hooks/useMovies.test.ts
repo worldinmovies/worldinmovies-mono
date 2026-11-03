@@ -110,7 +110,7 @@ describe('useMovies hook', () => {
     it('should not load if already loading', async () => {
       // We need a way to track loading state without a pending promise.
       // Use a deferred promise pattern: resolve it later to clean up.
-      let resolveFetch: (value: Response) => void;
+      let resolveFetch: (value: unknown) => void;
       const deferredPromise = new Promise((resolve) => {
         resolveFetch = resolve;
       });
@@ -136,8 +136,8 @@ describe('useMovies hook', () => {
       expect(mockFetch).toHaveBeenCalledTimes(1);
 
       // Clean up: resolve the deferred promise so pending state doesn't leak
-      mockFetch.mockResolvedValue([]);
-      resolveFetch!([]);
+      mockFetch.mockResolvedValue({ ok: true, json: async () => [] });
+      resolveFetch!({ ok: true, json: async () => [] });
       await new Promise(r => setTimeout(r, 10));
       act(() => {});
       unmount();
