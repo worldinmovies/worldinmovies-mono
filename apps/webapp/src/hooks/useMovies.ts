@@ -136,6 +136,76 @@ export const useMovies = (selectedCountry?: string | null) => {
     setLoading(false);
   }, []);
 
+  // Helper function for fetching director movies (internal use)
+  const fetchDirectorsMovies = useCallback(
+    async (directorName: string, skip: number, shouldReset: boolean = false) => {
+      if (!getBackendUrl()) {
+        // Fallback to mock data - filter by director
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        const directorMovies = MOVIE_DATABASE.filter(
+          (movie) => movie.director === directorName
+        );
+        const existingIds = shouldReset ? new Set<number>() : new Set(movies.map((m) => m.id));
+        const newMovies = directorMovies.filter(m => !existingIds.has(m.id)).slice(0, 8);
+        setMovies((prev) => shouldReset ? newMovies : [...prev, ...newMovies]);
+        if (shouldReset) {
+          setHasMore(newMovies.length > 0);
+        } else {
+          setHasMore(newMovies.length === 8 && newMovies.length < directorMovies.length - movies.length);
+        }
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const encodedDirector = encodeURIComponent(directorName);
+        const url = `${getBackendUrl()}/director/${encodedDirector}?skip=${skip}&limit=8`;
+        const response = await fetch(url);
+        if (response.ok) {
+          const newMovies = await response.json();
+          const mapped: Movie[] = newMovies.map((movie: DiscoverMovie) => transferDiscoverMovie(movie));
+
+          if (shouldReset) {
+            setMovies(mapped);
+          } else {
+            setMovies((prev) => [...prev, ...mapped]);
+          }
+
+          if (mapped.length === 0) {
+            setHasMore(false);
+          }
+        } else {
+          toast.error(`Error on calling backend ${response.status}`);
+        }
+      } catch (error) {
+        Sentry.captureException(error);
+        console.error("Error loading movies by director:", error);
+        toast.error("Failed to load movies for this director.");
+      }
+
+      setLoading(false);
+    },
+    [movies],
+  );
+
+  const loadMoviesByDirector = useCallback(
+    async (directorName: string) => {
+      setMovies([]);
+      setHasMore(true);
+      setLoading(true);
+      await fetchDirectorsMovies(directorName, 0, true);
+    },
+    [fetchDirectorsMovies],
+  );
+
+  const loadMoreMoviesByDirector = useCallback(
+    async (directorName: string) => {
+      if (loading || !hasMore) return;
+      await fetchDirectorsMovies(directorName, movies.length, false);
+    },
+    [loading, hasMore, movies.length, fetchDirectorsMovies],
+  );
+
   const fetchMovieDetails = useCallback(
     async (movieId: number) => {
       if (!getBackendUrl()) {
@@ -170,6 +240,8 @@ export const useMovies = (selectedCountry?: string | null) => {
     hasMore,
     loadMoreMovies,
     loadMoviesForCountry,
+    loadMoviesByDirector,
+    loadMoreMoviesByDirector,
     fetchMovieDetails,
   };
 };

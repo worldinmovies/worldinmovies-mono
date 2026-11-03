@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useMovies } from '@/hooks/useMovies';
+import { Movie } from '@/lib/models';
 
 // Mock fetch
 const mockFetch = vi.fn();
@@ -109,7 +110,7 @@ describe('useMovies hook', () => {
     it('should not load if already loading', async () => {
       // We need a way to track loading state without a pending promise.
       // Use a deferred promise pattern: resolve it later to clean up.
-      let resolveFetch: (value: any) => void;
+      let resolveFetch: (value: unknown) => void;
       const deferredPromise = new Promise((resolve) => {
         resolveFetch = resolve;
       });
@@ -135,8 +136,8 @@ describe('useMovies hook', () => {
       expect(mockFetch).toHaveBeenCalledTimes(1);
 
       // Clean up: resolve the deferred promise so pending state doesn't leak
-      mockFetch.mockResolvedValue([]);
-      resolveFetch!([]);
+      mockFetch.mockResolvedValue({ ok: true, json: async () => [] });
+      resolveFetch!({ ok: true, json: async () => [] });
       await new Promise(r => setTimeout(r, 10));
       act(() => {});
       unmount();
@@ -182,6 +183,137 @@ describe('useMovies hook', () => {
 
       const movie = await rendered.result.current.fetchMovieDetails(999);
       expect(movie).toBeNull();
+    });
+  });
+
+  describe('loadMoviesByDirector', () => {
+    it('should fetch movies by director from backend API', async () => {
+      const apiResponse = [
+        { _id: 1, original_title: 'Seven Samurai', year: 1954, estimated_country: 'JP',
+          director: 'Akira Kurosawa', imdb_vote_average: 8.5, vote_average: 8.0,
+          genres: ['Drama'], poster_path: '/seven-samurai.jpg', overview: 'Classic epic' },
+      ];
+
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => apiResponse,
+      });
+
+      const { result } = renderHook(() => useMovies());
+
+      await act(async () => {
+        await result.current.loadMoviesByDirector('Akira Kurosawa');
+      });
+
+      expect(result.current.movies.length).toBe(1);
+      expect(result.current.movies[0].title).toBe('Seven Samurai');
+      expect(result.current.loading).toBe(false);
+    });
+
+    it('should encode director name in the URL', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => [],
+      });
+
+      const { result } = renderHook(() => useMovies());
+
+      await act(async () => {
+        await result.current.loadMoviesByDirector('Akira Kurosawa');
+      });
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/director/Akira%20Kurosawa')
+      );
+    });
+
+    it('should reset movies and set loading when starting new director load', async () => {
+      const initialMovies: Movie[] = [{
+        id: 1, title: 'Existing Movie', year: 2020, country: 'Other Country',
+        countryCode: 'XX', countryFlag: '', director: 'Other Director', rating: 7.5,
+        genres: ['Drama'], poster: '/p.jpg', description: 'Desc'
+      }];
+
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => [],
+      });
+
+      const { result } = renderHook(() => useMovies());
+
+      // Simulate initial state with movies
+      await act(async () => {
+        result.current.movies.push(initialMovies[0]);
+      });
+
+      await act(async () => {
+        await result.current.loadMoviesByDirector('New Director');
+      });
+
+      expect(result.current.movies).toHaveLength(0);
+      expect(result.current.loading).toBe(false);
+    });
+
+    it('should handle errors when fetching director movies', async () => {
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 500,
+      });
+
+      const { result } = renderHook(() => useMovies());
+
+      // Should not throw, should handle gracefully
+      await act(async () => {
+        await result.current.loadMoviesByDirector('Some Director');
+      });
+
+      expect(result.current.loading).toBe(false);
+    });
+  });
+
+  describe('loadMoreMoviesByDirector', () => {
+    it('should load more movies using pagination', async () => {
+      const existingMovie = {
+        _id: 1, original_title: 'Seven Samurai', year: 1954, estimated_country: 'JP',
+        director: 'Akira Kurosawa', imdb_vote_average: 8.5, vote_average: 8.0,
+        genres: ['Drama'], poster_path: '/seven-samurai.jpg', overview: 'Classic epic',
+      };
+      const moreMovie = {
+        _id: 2, original_title: 'Rashomon', year: 1950, estimated_country: 'JP',
+        director: 'Akira Kurosawa', imdb_vote_average: 8.0, vote_average: 7.5,
+        genres: ['Drama'], poster_path: '/rashomon.jpg', overview: 'Rashomon'
+      };
+
+      // Initial fetch for existing movies
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => [existingMovie],
+      });
+
+      // Second fetch for more movies
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => [moreMovie],
+      });
+
+      const { result } = renderHook(() => useMovies());
+
+      // Load initial movies
+      await act(async () => {
+        await result.current.loadMoviesByDirector('Akira Kurosawa');
+      });
+
+      expect(result.current.movies).toHaveLength(1);
+
+      // Load more movies
+      await act(async () => {
+        await result.current.loadMoreMoviesByDirector('Akira Kurosawa');
+      });
+
+      expect(result.current.movies).toHaveLength(2);
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('skip=1')
+      );
     });
   });
 });

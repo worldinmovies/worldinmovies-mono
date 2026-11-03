@@ -20,6 +20,7 @@ const About = lazy(() => import("./pages/About"));
 const FAQ = lazy(() => import("./pages/FAQ"));
 const MovieDetail = lazy(() => import("./pages/MovieDetail"));
 const CountryPageRoute = lazy(() => import("./pages/CountryPageRoute"));
+const DirectorPage = lazy(() => import("./pages/DirectorPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -45,6 +46,7 @@ const App = () => {
                 <Route path="/faq" element={<FAQ />} />
                 <Route path="/movie/:id" element={<MovieDetail />} />
                 <Route path="/country/:countryCode" element={<CountryPageRoute />} />
+                <Route path="/director/:directorName" element={<DirectorPage />} />
                 <Route path="/trakt-import" element={<TraktImport />} />
                 <Route path="/trakt-callback" element={<TraktImport />} />
                 {!isNativePlatform && (
