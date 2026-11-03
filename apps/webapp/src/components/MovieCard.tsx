@@ -6,9 +6,10 @@ import { Movie } from "@/lib/models";
 interface MovieCardProps {
   movie: Movie;
   onClick?: () => void;
+  onDirectorClick?: (director: string) => void;
 }
 
-export const MovieCard = ({ movie, onClick }: MovieCardProps) => {
+export const MovieCard = ({ movie, onClick, onDirectorClick }: MovieCardProps) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
 
@@ -64,7 +65,15 @@ export const MovieCard = ({ movie, onClick }: MovieCardProps) => {
           </span>
         </div>
         <p className="text-sm text-cinema-silver">{movie.country}</p>
-        <p className="text-sm text-muted-foreground">Dir. {movie.director}</p>
+        <p className="text-sm text-muted-foreground cursor-pointer hover:underline"
+           onClick={(e) => {
+             e.stopPropagation();
+             if (onDirectorClick) {
+               onDirectorClick(movie.director);
+             }
+           }}>
+           Dir. {movie.director}
+         </p>
         <div className="flex items-center gap-2">
           <span className="text-xs px-2 py-1 rounded-full bg-accent/20 text-accent-foreground">
             {movie.genres?.join(', ')}

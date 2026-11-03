@@ -13,6 +13,7 @@ urlpatterns = [
     path('view/random/best/<int:movies>',   views.get_best_randoms),
     path('movies/<str:ids>',                views.fetch_movies_data),
     path('movie/<str:id>',                  views.fetch_movie_data),
+    path('director/<str:director_name>',    views.get_movies_by_director),
     path('imdb/ratings',                    views.parse_user_imdb_ratings),     # user CSV upload
     path('letterboxd/ratings',              views.parse_user_letterboxd_ratings), # user CSV upload
     re_path(r'^status$',                    views.import_status),

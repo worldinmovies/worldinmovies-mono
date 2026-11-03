@@ -3,6 +3,7 @@ import json
 import random
 import threading
 import time
+import urllib.parse
 
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -78,6 +79,34 @@ def get_best_movies_from_country(request, country_code):
     country_codes = convert_country_code(country_code)
     data = get_movies_from_country_codes(country_codes, limit, skip)
     return HttpResponse(data.to_json(), content_type='application/json')
+
+
+@csrf_exempt
+def get_movies_by_director(request, director_name):
+    """Fetch all movies by a specific director.
+    
+    Args:
+        director_name: URL-encoded director name from URL path
+        
+    Query Parameters:
+        skip: Number of results to skip (default: 0)
+        limit: Maximum number of results to return (default: 20)
+    
+    Returns:
+        JSON array of movies ordered by weighted_rating (best first)
+    """
+    skip = int(request.GET.get('skip', 0))
+    limit = int(request.GET.get('limit', 20))
+    
+    # Decode URL-encoded director name
+    director_name = urllib.parse.unquote(director_name)
+    
+    # Query DiscoveryMovie collection for performance
+    movies = DiscoveryMovie.objects.filter(
+        director=director_name
+    ).order_by('-weighted_rating').skip(skip).limit(limit)
+    
+    return HttpResponse(movies.to_json(), content_type='application/json')
 
 
 def get_genres(request):

@@ -8,6 +8,67 @@ from django.test import Client, TestCase
 from apps.api.middleware import HealthCheckHostBypassMiddleware
 
 
+class GetMoviesByDirectorTest(TestCase):
+    """Tests for the director movie listing endpoint."""
+
+    def setUp(self):
+        self.client = Client()
+
+    @patch('apps.api.views.DiscoveryMovie.objects.filter')
+    def test_returns_movies_for_director(self, mock_filter):
+        """Endpoint returns movies ordered by weighted_rating for given director."""
+        mock_queryset = MagicMock()
+        mock_queryset.order_by().skip().limit.return_value = [
+            MagicMock(to_json=lambda: '[{"id": 1, "title": "Movie 1"}, {"id": 2, "title": "Movie 2"}]')
+        ]
+        mock_filter.return_value = mock_queryset
+
+        response = self.client.get('/director/Akira%20Kurosawa')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/json')
+
+    @patch('apps.api.views.DiscoveryMovie.objects.filter')
+    def test_pagination_with_skip_and_limit(self, mock_filter):
+        """Endpoint supports skip and limit query parameters."""
+        mock_queryset = MagicMock()
+        mock_queryset.order_by().skip().limit.return_value = []
+        mock_filter.return_value = mock_queryset
+
+        response = self.client.get('/director/Alfred%20Hitchcock?skip=10&limit=5')
+
+        self.assertEqual(response.status_code, 200)
+        # Verify order_by was called with descending weighted_rating
+        mock_queryset.order_by.assert_called_with('-weighted_rating')
+        # Verify skip and limit were called with correct values
+        mock_queryset.order_by().skip.assert_called_with(10)
+        mock_queryset.order_by().skip().limit.assert_called_with(5)
+
+    @patch('apps.api.views.DiscoveryMovie.objects.filter')
+    def test_url_decodes_director_name(self, mock_filter):
+        """Endpoint properly decodes URL-encoded director names."""
+        mock_queryset = MagicMock()
+        mock_queryset.order_by().skip().limit.return_value = []
+        mock_filter.return_value = mock_queryset
+
+        self.client.get('/director/Akira%20Kurosawa')
+
+        # Verify the filter received the decoded name (not URL-encoded)
+        mock_filter.assert_called_once_with(director='Akira Kurosawa')
+
+    @patch('apps.api.views.DiscoveryMovie.objects.filter')
+    def test_returns_empty_array_for_director_not_found(self, mock_filter):
+        """Endpoint returns empty JSON array for non-existent director."""
+        mock_queryset = MagicMock()
+        mock_queryset.order_by().skip().limit.return_value = []
+        mock_filter.return_value = mock_queryset
+
+        response = self.client.get('/director/Nonexistent%20Director')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content.decode(), '[]')
+
+
 class SitemapViewTest(TestCase):
     def setUp(self):
         self.client = Client()

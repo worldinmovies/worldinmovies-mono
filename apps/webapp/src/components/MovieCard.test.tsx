@@ -93,4 +93,53 @@ describe('MovieCard component', () => {
     render(<MovieCard movie={mockMovie} />);
     expect(screen.getByText('A cyberpunk classic from Japan')).toBeInTheDocument();
   });
+
+  it('should render director name with cursor pointer', () => {
+    render(<MovieCard movie={mockMovie} />);
+    const directorText = screen.getByText('Dir. Katsuhiro Otomo');
+    expect(directorText).toHaveClass('cursor-pointer');
+  });
+
+  it('should call onDirectorClick when director name is clicked', () => {
+    const handleDirectorClick = vi.fn();
+    render(<MovieCard movie={mockMovie} onDirectorClick={handleDirectorClick} />);
+
+    fireEvent.click(screen.getByText('Dir. Katsuhiro Otomo'));
+    expect(handleDirectorClick).toHaveBeenCalledTimes(1);
+    expect(handleDirectorClick).toHaveBeenCalledWith('Katsuhiro Otomo');
+  });
+
+  it('should not trigger card onClick when director name is clicked', () => {
+    const handleCardClick = vi.fn();
+    const handleDirectorClick = vi.fn();
+    render(
+      <MovieCard
+        movie={mockMovie}
+        onClick={handleCardClick}
+        onDirectorClick={handleDirectorClick}
+      />
+    );
+
+    fireEvent.click(screen.getByText('Dir. Katsuhiro Otomo'));
+    expect(handleDirectorClick).toHaveBeenCalledTimes(1);
+    expect(handleCardClick).not.toHaveBeenCalled();
+  });
+
+  it('should stop propagation when director is clicked', () => {
+    const handleCardClick = vi.fn();
+    const handleDirectorClick = vi.fn();
+    render(
+      <MovieCard
+        movie={mockMovie}
+        onClick={handleCardClick}
+        onDirectorClick={handleDirectorClick}
+      />
+    );
+
+    // Click the director text
+    fireEvent.click(screen.getByText('Dir. Katsuhiro Otomo'));
+    expect(handleDirectorClick).toHaveBeenCalledTimes(1);
+    // Card onClick should not be triggered because of stopPropagation
+    expect(handleCardClick).not.toHaveBeenCalled();
+  });
 });
